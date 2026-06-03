@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+    android:id="@+id/main_layout_id"
+
+    android:fitsSystemWindows="true"
+
+    android:layout_width="match_parent"
+
+    android:layout_height="match_parent"
+
+    android:orientation="vertical"
+
+    android:background="#121212"
+
+    android:padding="16dp">
+
+
+
+    <LinearLayout
+
+        android:layout_width="match_parent"
+
+        android:layout_height="wrap_content"
+
+        android:orientation="horizontal"
+
+        android:layout_marginBottom="16dp">
+
+
+
+        <Button
+
+            android:id="@+id/btnTabDevices"
+
+            android:layout_width="0dp"
+
+            android:layout_height="wrap_content"
+
+            android:layout_weight="1"
+
+            android:text="Geräte"
+
+            android:textAllCaps="false" />
+
+
+
+        <Button
+
+            android:id="@+id/btnTabLog"
+
+            android:layout_width="0dp"
+
+            android:layout_height="wrap_content"
+
+            android:layout_weight="1"
+
+            android:text="Log"
+
+            android:textAllCaps="false" />
+
+
+
+        <Button
+
+            android:id="@+id/btnTabRoute"
+
+            android:layout_width="0dp"
+
+            android:layout_height="wrap_content"
+
+            android:layout_weight="1"
+
+            android:text="Route"
+
+            android:textAllCaps="false" />
+
+    </LinearLayout>
+
+
+
+    <FrameLayout
+
+        android:layout_width="match_parent"
+
+        android:layout_height="0dp"
+
+        android:layout_weight="1">
+
+
+
+        <LinearLayout
+
+            android:id="@+id/containerDevices"
+
+            android:layout_width="match_parent"
+
+            android:layout_height="match_parent"
+
+            android:orientation="vertical">
+
+
+
+            <Button
+
+                android:id="@+id/btnRefreshLog"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:text="Scan starten" />
+
+
+
+            <ListView
+
+                android:id="@+id/deviceListView"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="match_parent"
+
+                android:divider="#333333"
+
+                android:dividerHeight="1dp" />
+
+        </LinearLayout>
+
+
+
+        <LinearLayout
+
+            android:id="@+id/containerLog"
+
+            android:layout_width="match_parent"
+
+            android:layout_height="match_parent"
+
+            android:orientation="vertical"
+
+            android:visibility="gone">
+
+
+
+            <LinearLayout
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:orientation="horizontal">
+
+
+
+                <EditText
+
+                    android:id="@+id/etTestMessage"
+
+                    android:layout_width="0dp"
+
+                    android:layout_height="wrap_content"
+
+                    android:layout_weight="1"
+
+                    android:hint="Testnachricht..."
+
+                    android:textColor="#FFFFFF"
+
+                    android:textColorHint="#888888" />
+
+
+
+                <Button
+
+                    android:id="@+id/btnSendMessage"
+
+                    android:layout_width="wrap_content"
+
+                    android:layout_height="wrap_content"
+
+                    android:text="Senden" />
+
+            </LinearLayout>
+
+
+
+            <ScrollView
+
+                android:id="@+id/logScrollView"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="0dp"
+
+                android:layout_weight="1"
+
+                android:background="#1E1E1E"
+
+                android:padding="8dp">
+
+
+
+                <TextView
+
+                    android:id="@+id/tvLogContent"
+
+                    android:layout_width="match_parent"
+
+                    android:layout_height="wrap_content"
+
+                    android:fontFamily="monospace"
+
+                    android:text="Warte auf Start..."
+
+                    android:textColor="#00FF00"
+
+                    android:textSize="12sp" />
+
+            </ScrollView>
+
+
+
+            <Button
+
+                android:id="@+id/btnShareLog"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:text="Log teilen"
+
+                android:layout_marginTop="8dp"/>
+
+        </LinearLayout>
+
+
+
+        <LinearLayout
+
+            android:id="@+id/containerRoute"
+
+            android:layout_width="match_parent"
+
+            android:layout_height="match_parent"
+
+            android:orientation="vertical"
+
+            android:visibility="gone">
+
+
+
+            <TextView
+
+                android:id="@+id/tvSelectedRoute"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:text="Keine Route gewählt"
+
+                android:textColor="#FFFFFF"
+
+                android:padding="8dp" />
+
+
+
+            <Button
+
+                android:id="@+id/btnSelectFile"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:text="Route laden (.gpx, .kml, .json)" />
+
+
+
+            <Button
+
+                android:id="@+id/btnClearRoute"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:text="Route löschen"
+
+                android:layout_marginTop="8dp" />
+
+
+
+            <View
+
+                android:layout_width="match_parent"
+
+                android:layout_height="1dp"
+
+                android:background="#444444"
+
+                android:layout_marginVertical="20dp" />
+
+
+
+            <TextView
+
+                android:layout_width="wrap_content"
+
+                android:layout_height="wrap_content"
+
+                android:text="Externe App-Meldungen"
+
+                android:textColor="#FFFFFF"
+
+                android:textSize="16sp"
+
+                android:textStyle="bold" />
+
+
+
+            <LinearLayout
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:orientation="horizontal"
+
+                android:gravity="center_vertical"
+
+                android:layout_marginTop="10dp">
+
+
+
+                <Switch
+
+                    android:id="@+id/switchExternalNav"
+
+                    android:layout_width="wrap_content"
+
+                    android:layout_height="wrap_content"
+
+                    android:text="Notifications lesen"
+
+                    android:textColor="#FFFFFF" />
+
+
+
+                <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+
+
+
+                <Button
+
+                    android:id="@+id/btnSelectNavApps"
+
+                    android:layout_width="wrap_content"
+
+                    android:layout_height="wrap_content"
+
+                    android:text="Apps wählen" />
+
+            </LinearLayout>
+
+
+
+            <TextView
+
+                android:id="@+id/tvSelectedAppsCount"
+
+                android:layout_width="wrap_content"
+
+                android:layout_height="wrap_content"
+
+                android:text="0 Apps aktiv"
+
+                android:textColor="#AAAAAA"
+
+                android:textSize="12sp"
+
+                android:layout_marginBottom="16dp" />
+
+
+
+            <LinearLayout
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:orientation="horizontal"
+
+                android:gravity="center_vertical"
+
+                android:layout_marginTop="4dp">
+
+
+
+                <Switch
+
+                    android:id="@+id/switchTtsEnabled"
+
+                    android:layout_width="wrap_content"
+
+                    android:layout_height="wrap_content"
+
+                    android:text="Sprachausgabe (TTS)"
+
+                    android:textColor="#FFFFFF" />
+
+            </LinearLayout>
+
+
+
+            <View
+
+                android:layout_width="match_parent"
+
+                android:layout_height="1dp"
+
+                android:layout_weight="1" />
+
+
+
+            <Button
+
+                android:id="@+id/btnResetService"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:text="Navi-Service neu starten"
+
+                android:backgroundTint="#444444"
+
+                android:textColor="#FFFFFF"
+
+                android:layout_marginTop="8dp" />
+
+
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</LinearLayout>

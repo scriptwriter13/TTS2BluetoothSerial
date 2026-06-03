@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Bike-TTS-HUD</string>
+    <string name="full_project_name">Bike-TTSNavigation-HUD</string>
+    <string name="tts_service_label">Bike-TTS Smart Navigation (ESP32)</string>
+</resources>

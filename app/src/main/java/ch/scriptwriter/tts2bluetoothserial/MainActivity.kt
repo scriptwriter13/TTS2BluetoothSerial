@@ -1,0 +1,732 @@
+// Filename: MainActivity.kt
+// Datum: 2026-03-29
+// Update: V5.3 - Master-Anker BikeNav_App (Share-Log-Timestamp)
+// Fokus: Bluetooth-Scan nur bei Bedarf (Navi-Event) + Log-Share mit Zeitstempel-Dateiname
+
+package ch.scriptwriter.tts2bluetoothserial
+
+import android.Manifest
+import android.app.AlertDialog
+import android.bluetooth.*
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
+import android.content.*
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.net.Uri
+import android.os.*
+import android.provider.Settings
+import android.speech.tts.TextToSpeech
+import android.util.Log
+import android.util.Xml
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import org.xmlpull.v1.XmlPullParser
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
+import android.service.notification.NotificationListenerService
+
+class MainActivity : AppCompatActivity(), LocationListener {
+
+    private val TAG = "BikeNav_Main"
+    private val ALLOWED_EXTENSIONS = listOf("gpx", "kml", "xml", "json")
+
+    private val PRIORITY_PACKAGES = listOf(
+        "com.google.android.apps.maps",
+        "de.komoot.android",
+        "net.osmand",
+        "net.osmand.plus",
+        "org.kurviger.android",
+        "com.strava",
+        "com.mapfactor.navigator",
+        "com.sygic.aura",
+        "app.organicmaps"
+    )
+
+    companion object {
+        private var instance: MainActivity? = null
+
+        // Zentraler Einstiegspunkt für den NotificationService
+        fun sendBleStatic(data: String) {
+            instance?.let { main ->
+                // Hier explizit restartGps = true, da eine Nachricht reinkommt
+                main.updateLog(data, restartGps = true)
+                // V5.1: Trigger den Scan, falls die Nachricht ins Leere laufen würde
+                if (!main.isBleConnected) {
+                    main.runOnUiThread { main.triggerScanIfDisconnected() }
+                }
+                Log.d("BikeNav_Main", ">>> [STATIC-IN]: $data")
+            } ?: Log.e("BikeNav_Main", ">>> Fehler: MainActivity Instanz nicht bereit!")
+        }
+    }
+
+    // UI Elemente
+    private lateinit var tvLogContent: TextView
+    private lateinit var logScrollView: ScrollView
+    private lateinit var deviceListView: ListView
+    private lateinit var btnTabDevices: Button
+    private lateinit var btnTabLog: Button
+    private lateinit var btnTabRoute: Button
+    private lateinit var containerDevices: LinearLayout
+    private lateinit var containerLog: LinearLayout
+    private lateinit var containerRoute: LinearLayout
+    private lateinit var tvSelectedRoute: TextView
+    private lateinit var btnSelectFile: Button
+    private lateinit var btnClearRoute: Button
+    private lateinit var switchExternalNav: Switch
+    private lateinit var switchTtsEnabled: Switch
+    private lateinit var btnSelectNavApps: Button
+    private lateinit var tvSelectedAppsCount: TextView
+
+    private lateinit var etManualCommand: EditText
+    private lateinit var btnSendMessage: Button
+    private lateinit var btnShareLog: Button
+    private lateinit var btnResetService: Button
+
+    // BLE Variablen
+    private var bluetoothGatt: BluetoothGatt? = null
+    private var writeCharacteristic: BluetoothGattCharacteristic? = null
+    var isBleConnected = false // Jetzt intern lesbar für Companion
+    private var lastConnectedDeviceAddress: String? = null
+    private val foundDevices = mutableListOf<BluetoothDevice>()
+    private var isScanning = false
+    private var lastScanTimestamp = 0L
+
+    private val SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
+    private val CHAR_UUID    = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
+
+    // GPS & Logik
+    private lateinit var locationManager: LocationManager
+    private val LOG_FILE = "bike_log.txt"
+    private val PREFS_NAME = "BikeNavPrefs"
+    private val NAVI_PREFS = "NaviSettings"
+    private val KEY_ROUTE_PATH = "selected_route_path"
+    private val KEY_ROUTE_NAME = "selected_route_name"
+    private val KEY_LAST_PICKER_PATH = "last_picker_path"
+    private val KEY_LAST_BLE_ADDR = "last_ble_address"
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var lastSpeedSent = -1
+    private var speedBuffer = mutableListOf<Float>()
+    private var lastSendTime = 0L
+    private var routePoints = mutableListOf<Location>()
+    private var nextPointIndex = 0
+    private var lastPktSendTime = 0L
+    private var isFirstFix = true
+    private var isWritingBle = false
+
+    // GPS Inaktivitäts-Management
+    private var lastActivityTime = System.currentTimeMillis()
+    private var isGpsActive = false
+    private val GPS_TIMEOUT = 120_000L // 2 Minuten
+
+    private var tts: TextToSpeech? = null
+
+    private val gpsCheckRunnable = object : Runnable {
+        override fun run() {
+            if (isGpsActive && (System.currentTimeMillis() - lastActivityTime > GPS_TIMEOUT)) {
+                stopGpsUpdates()
+                // WICHTIG: Hier kein updateLog aufrufen, das GPS reaktivieren würde
+                Log.d(TAG, "System: GPS Standby (Inaktiv)")
+            }
+            handler.postDelayed(this, 30000) // Alle 30 Sekunden prüfen
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+        setContentView(R.layout.activity_main)
+
+        val rootLayout = findViewById<View>(android.R.id.content)
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        instance = this
+        initUI()
+        setupExternalNavLogic()
+        loadPersistedData()
+        switchTab(0)
+
+        performTtsHardReset()
+
+        lastConnectedDeviceAddress = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_LAST_BLE_ADDR, null)
+
+        // V5.1: Erster Scan beim Start, danach nur noch auf Trigger
+        handler.postDelayed({ triggerScanIfDisconnected() }, 1500)
+        
+        // GPS Timeout Check starten
+        handler.postDelayed(gpsCheckRunnable, 30000)
+    }
+
+    /**
+     * V5.1: Die "Passive-Trigger" Kernfunktion.
+     * Wird aufgerufen, wenn eine Nachricht reinkommt, aber keine Verbindung besteht.
+     */
+    fun triggerScanIfDisconnected() {
+        if (isBleConnected || isScanning) return
+
+        // Anti-Spam: Scanne maximal einmal alle 30 Sekunden automatisch
+        val now = System.currentTimeMillis()
+        if (now - lastScanTimestamp < 30000L) {
+            Log.d(TAG, "Scan-Trigger ignoriert (Cooldown aktiv)")
+            return
+        }
+
+        lastScanTimestamp = now
+        updateLog("Trigger: Suche HUD...")
+        startSmartScan()
+    }
+
+    private fun performTtsHardReset() {
+        Log.d(TAG, "Starte TTS Hard-Reset...")
+        updateLog("System: TTS Reset...")
+        try {
+            tts?.stop()
+            tts?.shutdown()
+            tts = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Fehler beim TTS Shutdown: ${e.message}")
+        }
+        handler.postDelayed({ initTts() }, 500)
+    }
+
+    private fun initTts() {
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale.GERMANY
+                updateLog("STT:TTS bereit.")
+                handler.postDelayed({ triggerSelfTest() }, 1000)
+            } else {
+                updateLog("Fehler: TTS Start")
+            }
+        }
+    }
+
+    private fun triggerSelfTest() {
+        val params = Bundle()
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "INIT_TEST")
+        tts?.speak("System aktiv", TextToSpeech.QUEUE_FLUSH, params, "INIT_TEST")
+    }
+
+    private fun initUI() {
+        tvLogContent = findViewById(R.id.tvLogContent)
+        logScrollView = findViewById(R.id.logScrollView)
+        deviceListView = findViewById(R.id.deviceListView)
+        btnTabDevices = findViewById(R.id.btnTabDevices)
+        btnTabLog = findViewById(R.id.btnTabLog)
+        btnTabRoute = findViewById(R.id.btnTabRoute)
+        containerDevices = findViewById(R.id.containerDevices)
+        containerLog = findViewById(R.id.containerLog)
+        containerRoute = findViewById(R.id.containerRoute)
+        tvSelectedRoute = findViewById(R.id.tvSelectedRoute)
+        btnSelectFile = findViewById(R.id.btnSelectFile)
+        btnClearRoute = findViewById(R.id.btnClearRoute)
+        switchExternalNav = findViewById(R.id.switchExternalNav)
+        switchTtsEnabled = findViewById(R.id.switchTtsEnabled)
+        btnSelectNavApps = findViewById(R.id.btnSelectNavApps)
+        tvSelectedAppsCount = findViewById(R.id.tvSelectedAppsCount)
+
+        etManualCommand = findViewById(R.id.etTestMessage)
+        btnSendMessage = findViewById(R.id.btnSendMessage)
+        btnShareLog = findViewById(R.id.btnShareLog)
+        btnResetService = findViewById(R.id.btnResetService)
+
+        // Version & Git-Hash anzeigen
+        val tvVersion = TextView(this)
+        tvVersion.text = "Version: ${BuildConfig.VERSION_NAME} (${BuildConfig.GIT_HASH})"
+        tvVersion.textSize = 12f
+        tvVersion.setTextColor(Color.GRAY)
+        tvVersion.gravity = android.view.Gravity.CENTER
+        tvVersion.setPadding(0, 16, 0, 16)
+        // Hinzufügen an Index 0, damit es oben erscheint
+        containerDevices.addView(tvVersion, 0)
+
+        btnTabDevices.setOnClickListener { switchTab(0) }
+        btnTabLog.setOnClickListener { switchTab(1) }
+        btnTabRoute.setOnClickListener { switchTab(2) }
+
+        btnSelectFile.setOnClickListener {
+            val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val lastPath = prefs.getString(KEY_LAST_PICKER_PATH, null)
+            val startDir = if (lastPath != null && File(lastPath).exists()) File(lastPath) else File(Environment.getExternalStorageDirectory(), "Download")
+            showNavPicker(if (startDir.exists()) startDir else Environment.getExternalStorageDirectory())
+        }
+
+        btnClearRoute.setOnClickListener { clearRoute() }
+
+        btnSendMessage.setOnClickListener {
+            val cmd = etManualCommand.text.toString().trim()
+            if (cmd.isNotEmpty()) {
+                updateLog(cmd)
+                etManualCommand.setText("")
+            }
+        }
+
+        btnResetService.setOnClickListener {
+            performTtsHardReset()
+            updateLog("System: Service Reset")
+        }
+
+        btnShareLog.setOnClickListener {
+            shareLogFile()
+        }
+
+        findViewById<Button>(R.id.btnRefreshLog).setOnClickListener {
+            lastScanTimestamp = 0L // Reset Cooldown für manuelle Suche
+            triggerScanIfDisconnected()
+        }
+
+        tvLogContent.setOnLongClickListener {
+            File(filesDir, LOG_FILE).delete()
+            tvLogContent.text = "Log gelöscht."
+            performTtsHardReset()
+            true
+        }
+    }
+
+    private fun shareLogFile() {
+        val originalFile = File(filesDir, LOG_FILE)
+        if (!originalFile.exists() || originalFile.length() == 0L) {
+            Toast.makeText(this, "Log ist leer", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            // Erzeuge einen Dateinamen mit Zeitstempel für den Share-Vorgang
+            val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
+            val dateStr = sdf.format(Date())
+            val shareFile = File(filesDir, "bike_log_$dateStr.txt")
+
+            // Kopiere den Inhalt in die neue Datei
+            originalFile.copyTo(shareFile, overwrite = true)
+
+            // Erzeuge URI über den FileProvider
+            val uri: Uri = FileProvider.getUriForFile(this, "$packageName.provider", shareFile)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "BikeNav Log teilen"))
+
+            // Die temporäre Share-Datei nach kurzer Zeit löschen (optional, oder beim nächsten App-Start aufräumen)
+            handler.postDelayed({ try { shareFile.delete() } catch(e:Exception){} }, 60000)
+
+        } catch (e: Exception) {
+            updateLog("Fehler beim Teilen: ${e.message}")
+            Log.e(TAG, "Share Error", e)
+        }
+    }
+
+    private fun switchTab(i: Int) {
+        containerDevices.visibility = if (i == 0) View.VISIBLE else View.GONE
+        containerLog.visibility = if (i == 1) View.VISIBLE else View.GONE
+        containerRoute.visibility = if (i == 2) View.VISIBLE else View.GONE
+        if (i == 1) logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    private fun showNavPicker(dir: File) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            AlertDialog.Builder(this).setTitle("Berechtigung erforderlich").setPositiveButton("Einstellungen") { _, _ ->
+                startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+            }.show()
+            return
+        }
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(KEY_LAST_PICKER_PATH, dir.absolutePath).apply()
+        val files = dir.listFiles()?.filter { it.isDirectory || ALLOWED_EXTENSIONS.contains(it.extension.lowercase()) }?.sortedWith(compareBy({ it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
+        val displayNames = mutableListOf<String>()
+        if (dir.path != Environment.getExternalStorageDirectory().path && dir.parentFile != null) displayNames.add(".. (Zurück)")
+        files.forEach { displayNames.add(if (it.isDirectory) "📁 ${it.name}" else "📄 ${it.name}") }
+        AlertDialog.Builder(this).setTitle("Pfad: ${dir.name}").setItems(displayNames.toTypedArray()) { _, which ->
+            if (displayNames[which] == ".. (Zurück)") showNavPicker(dir.parentFile ?: dir)
+            else {
+                val actualIndex = if (displayNames.isNotEmpty() && displayNames[0] == ".. (Zurück)") which - 1 else which
+                val selectedFile = files[actualIndex]
+                if (selectedFile.isDirectory) showNavPicker(selectedFile) else saveRouteFromPath(selectedFile)
+            }
+        }.show()
+    }
+
+    private fun saveRouteFromPath(file: File) {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(KEY_ROUTE_PATH, file.absolutePath).putString(KEY_ROUTE_NAME, file.name).apply()
+        updateLog("Datei OK: ${file.name}"); displayStoredRoute(); loadRouteIntoMemory()
+    }
+
+    private fun startSmartScan() {
+        if (!checkPermissions()) { requestPermissions(); return }
+        if (isBleConnected || isScanning) return
+
+        isScanning = true
+        foundDevices.clear()
+        updateDeviceListView()
+
+        val adapter = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+        if (!adapter.isEnabled) { updateLog("Bluetooth ist AUS"); isScanning = false; return }
+
+        val scanner = adapter.bluetoothLeScanner
+        val filter = ScanFilter.Builder().setServiceUuid(ParcelUuid(SERVICE_UUID)).build()
+        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
+            scanner?.startScan(listOf(filter), settings, bleScanCallback)
+            handler.postDelayed({
+                stopScanning()
+                if (!isBleConnected && foundDevices.isNotEmpty()) {
+                    val target = lastConnectedDeviceAddress
+                    val autoTarget = if (target != null) foundDevices.find { it.address == target } else if (foundDevices.size == 1) foundDevices[0] else null
+                    autoTarget?.let { connectToDevice(it.address) }
+                }
+            }, 6000)
+        }
+    }
+
+    private fun stopScanning() {
+        val adapter = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
+            adapter.bluetoothLeScanner?.stopScan(bleScanCallback)
+        }
+        isScanning = false
+    }
+
+    private val bleScanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            val device = result.device
+            if (foundDevices.none { it.address == device.address }) {
+                foundDevices.add(device)
+                runOnUiThread { updateDeviceListView() }
+                if (device.address == lastConnectedDeviceAddress && !isBleConnected) {
+                    stopScanning()
+                    connectToDevice(device.address)
+                }
+            }
+        }
+    }
+
+    private fun connectToDevice(address: String) {
+        val adapter = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+        val device = adapter.getRemoteDevice(address)
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            updateLog("Verbinde: ${device.name ?: "HUD"}...")
+            bluetoothGatt?.close()
+            bluetoothGatt = device.connectGatt(this, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        }
+    }
+
+    private val gattCallback = object : BluetoothGattCallback() {
+        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                isBleConnected = true
+                lastConnectedDeviceAddress = gatt.device.address
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(KEY_LAST_BLE_ADDR, lastConnectedDeviceAddress).apply()
+                if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) gatt.discoverServices()
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                isBleConnected = false
+                writeCharacteristic = null
+                runOnUiThread { updateDeviceListView() }
+                updateLog("Warnung: HUD verloren")
+            }
+        }
+        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            val service = gatt.getService(SERVICE_UUID)
+            writeCharacteristic = service?.getCharacteristic(CHAR_UUID)
+            if (writeCharacteristic != null) {
+                if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) gatt.requestMtu(512)
+                updateLog("System: HUD bereit")
+                runOnUiThread { startGpsUpdates(); updateDeviceListView() }
+            }
+        }
+    }
+
+    fun updateLog(message: String, restartGps: Boolean = false) {
+        if (restartGps) {
+            lastActivityTime = System.currentTimeMillis()
+            if (!isGpsActive) startGpsUpdates()
+        }
+
+        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        val logEntry = "[$time] $message\n"
+
+        Thread {
+            try {
+                val file = File(filesDir, LOG_FILE)
+                val fos = FileOutputStream(file, true)
+                fos.write(logEntry.toByteArray())
+                fos.close()
+            } catch (e: Exception) { Log.e(TAG, "Log-Write Error: ${e.message}") }
+        }.start()
+
+        runOnUiThread {
+            tvLogContent.append(logEntry)
+            if (tvLogContent.lineCount > 100) {
+                val txt = tvLogContent.text; val idx = txt.indexOf("\n")
+                if (idx != -1) tvLogContent.text = txt.subSequence(idx + 1, txt.length)
+            }
+            if (containerLog.visibility == View.VISIBLE) logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
+        }
+        sendMessageToBle(message)
+    }
+
+    override fun onLocationChanged(l: Location) {
+        if (!isBleConnected || l.accuracy > 25) return
+        speedBuffer.add(l.speed)
+        val now = System.currentTimeMillis()
+        if (now - lastSendTime >= 5000L && speedBuffer.isNotEmpty()) {
+            val avg = (speedBuffer.average() * 3.6).toInt()
+            speedBuffer.clear(); lastSendTime = now
+            if (avg != lastSpeedSent) { lastSpeedSent = avg; updateLog("SPD:$avg", restartGps = true) }
+        }
+        if (routePoints.isNotEmpty() && l.speed > 0.4) handleRoutePoints(l)
+    }
+
+    private fun handleRoutePoints(l: Location) {
+        val now = System.currentTimeMillis()
+        var curD = l.distanceTo(routePoints[nextPointIndex])
+        if (isFirstFix || curD > 150f) { reLockPoint(l); isFirstFix = false }
+        else {
+            while (nextPointIndex < routePoints.size - 1) {
+                val nD = l.distanceTo(routePoints[nextPointIndex + 1])
+                if (nD < curD) { curD = nD; nextPointIndex++ } else break
+            }
+        }
+        if (now - lastPktSendTime >= 5000L && l.hasBearing()) {
+            val target = routePoints[nextPointIndex]
+            var rel = l.bearingTo(target) - l.bearing
+            if (rel > 180) rel -= 360 else if (rel < -180) rel += 360
+            updateLog("PKT:${rel.toInt()};${l.distanceTo(target).toInt()};$nextPointIndex", restartGps = true)
+            lastPktSendTime = now
+        }
+    }
+
+    private fun reLockPoint(l: Location) {
+        if (routePoints.isEmpty()) return
+        
+        // Suche nur in einem Fenster von 50 Punkten ab dem aktuellen Index
+        val searchWindow = 50
+        val startIndex = nextPointIndex
+        val endIndex = minOf(startIndex + searchWindow, routePoints.size - 1)
+        
+        var bI = startIndex
+        var mD = Float.MAX_VALUE
+        
+        for (i in startIndex..endIndex) {
+            val d = l.distanceTo(routePoints[i])
+            if (d < mD) {
+                mD = d
+                bI = i
+            }
+        }
+        
+        nextPointIndex = bI
+        updateLog("System: Re-Lock P$bI", restartGps = true)
+    }
+
+    private fun startGpsUpdates() {
+        if (isGpsActive) return
+        if (checkPermissions()) {
+            locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            try {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000L, 10.0f, this)
+                isGpsActive = true
+                updateLog("System: Eco-GPS aktiv (5s/10m)", restartGps = false)
+            } catch (e: Exception) {
+                updateLog("Fehler: GPS Start", restartGps = false)
+            }
+        }
+    }
+
+    private fun stopGpsUpdates() {
+        if (!isGpsActive) return
+        try {
+            locationManager.removeUpdates(this)
+            isGpsActive = false
+            updateLog("System: GPS Standby", restartGps = false)
+        } catch (e: Exception) {
+            Log.e(TAG, "Fehler beim GPS Stoppen: ${e.message}")
+        }
+    }
+
+    private fun checkPermissions(): Boolean {
+        val loc = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val scan = if (Build.VERSION.SDK_INT >= 31) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        } else true
+        return loc && scan
+    }
+
+    private fun requestPermissions() {
+        val perms = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        if (Build.VERSION.SDK_INT >= 31) { perms.add(Manifest.permission.BLUETOOTH_SCAN); perms.add(Manifest.permission.BLUETOOTH_CONNECT) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { perms.add(Manifest.permission.POST_NOTIFICATIONS) }
+        ActivityCompat.requestPermissions(this, perms.toTypedArray(), 1)
+    }
+
+    private fun setupExternalNavLogic() {
+        val navPrefs = getSharedPreferences(NAVI_PREFS, MODE_PRIVATE)
+        switchExternalNav.isChecked = navPrefs.getBoolean("external_nav_enabled", false)
+        switchTtsEnabled.isChecked = navPrefs.getBoolean("tts_enabled", true)
+        updateAppCountText()
+        switchExternalNav.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && !isNotificationServiceEnabled()) { showNotificationAccessDialog(); switchExternalNav.isChecked = false }
+            else navPrefs.edit().putBoolean("external_nav_enabled", isChecked).apply()
+        }
+        switchTtsEnabled.setOnCheckedChangeListener { _, isChecked -> navPrefs.edit().putBoolean("tts_enabled", isChecked).apply() }
+        btnSelectNavApps.setOnClickListener { showAppSelectionDialog() }
+    }
+
+    private fun showAppSelectionDialog() {
+        val pm = packageManager
+        val apps = pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
+            .filter { !it.activityInfo.packageName.startsWith("com.android.") }
+            .map { it.loadLabel(pm).toString() to it.activityInfo.packageName }
+            .sortedWith(compareBy({ !PRIORITY_PACKAGES.contains(it.second) }, { it.first.lowercase() }))
+        val names = apps.map { if (PRIORITY_PACKAGES.contains(it.second)) "⭐ ${it.first}" else it.first }.toTypedArray()
+        val pks = apps.map { it.second }.toTypedArray()
+        val navPrefs = getSharedPreferences(NAVI_PREFS, MODE_PRIVATE)
+        val saved = navPrefs.getStringSet("allowed_packages", emptySet()) ?: emptySet()
+        val checked = BooleanArray(names.size) { i -> saved.contains(pks[i]) }
+
+        AlertDialog.Builder(this).setTitle("Navi-Apps wählen").setMultiChoiceItems(names, checked) { _, i, c -> checked[i] = c }
+            .setPositiveButton("OK") { _, _ ->
+                val set = mutableSetOf<String>()
+                checked.forEachIndexed { i, c -> if (c) set.add(pks[i]) }
+                navPrefs.edit().putStringSet("allowed_packages", set).apply()
+                updateAppCountText()
+                if (Build.VERSION.SDK_INT >= 24) {
+                    try { NotificationListenerService.requestRebind(ComponentName(this, NotificationService::class.java)) } catch(e:Exception){}
+                }
+            }.show()
+    }
+
+    private fun updateAppCountText() {
+        val count = getSharedPreferences(NAVI_PREFS, MODE_PRIVATE).getStringSet("allowed_packages", emptySet())?.size ?: 0
+        tvSelectedAppsCount.text = "$count Apps aktiv"
+    }
+
+    private fun isNotificationServiceEnabled() = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")?.contains(packageName) == true
+    private fun showNotificationAccessDialog() {
+        AlertDialog.Builder(this).setMessage("Benachrichtigungszugriff erlauben?").setPositiveButton("OK") { _, _ -> startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")) }.show()
+    }
+
+    private fun updateDeviceListView() {
+        val names = foundDevices.map { "${it.name ?: "HUD"}\n${it.address}" }
+        deviceListView.adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val v = super.getView(position, convertView, parent) as TextView
+                val conn = isBleConnected && bluetoothGatt?.device?.address == foundDevices[position].address
+                v.setTextColor(Color.WHITE); v.setBackgroundColor(if (conn) Color.parseColor("#2E7D32") else Color.TRANSPARENT)
+                return v
+            }
+        }
+        deviceListView.setOnItemClickListener { _, _, i, _ -> stopScanning(); connectToDevice(foundDevices[i].address) }
+    }
+
+    private fun sendMessageToBle(message: String) {
+        val char = writeCharacteristic ?: return
+        if (!isBleConnected || isWritingBle) return
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) return
+        isWritingBle = true
+        val payload = if (message.endsWith("\n")) message else "$message\n"
+        char.value = payload.toByteArray(Charsets.UTF_8)
+        char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+        bluetoothGatt?.writeCharacteristic(char)
+        handler.postDelayed({ isWritingBle = false }, 50)
+    }
+
+    private fun clearRoute() {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().remove(KEY_ROUTE_PATH).remove(KEY_ROUTE_NAME).apply()
+        routePoints.clear(); displayStoredRoute()
+    }
+
+    private fun displayStoredRoute() {
+        val name = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_ROUTE_NAME, null)
+        tvSelectedRoute.text = if (name != null) "Route: $name" else "Keine Route"
+    }
+
+    private fun loadRouteIntoMemory() {
+        val path = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_ROUTE_PATH, null) ?: return
+        Thread {
+            try {
+                val file = File(path)
+                if (!file.exists()) return@Thread
+                val content = file.readText(); val points = mutableListOf<Location>()
+                if (content.contains("<gpx", true)) parseGpx(content, points)
+                if (points.isNotEmpty()) {
+                    runOnUiThread { routePoints = points; nextPointIndex = 0; isFirstFix = true; updateLog("System: Wegpunkte geladen (${points.size})") }
+                }
+            } catch (e: Exception) { runOnUiThread { updateLog("System: Ladefehler") } }
+        }.start()
+    }
+
+    private fun parseGpx(content: String, points: MutableList<Location>) {
+        try {
+            val parser = Xml.newPullParser(); parser.setInput(content.reader())
+            var eventType = parser.eventType
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if (eventType == XmlPullParser.START_TAG) {
+                    val tagName = parser.name.lowercase()
+                    if (tagName == "trkpt" || tagName == "rtept" || tagName == "wpt") {
+                        val lat = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
+                        val lon = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
+                        if (lat != null && lon != null) points.add(Location("xml").apply { latitude = lat; longitude = lon })
+                    }
+                }
+                eventType = parser.next()
+            }
+        } catch (e: Exception) {}
+    }
+
+    private fun loadPersistedData() { loadLogFromFile(); displayStoredRoute(); loadRouteIntoMemory() }
+
+    private fun loadLogFromFile() {
+        Thread {
+            try {
+                val f = File(filesDir, LOG_FILE)
+                if (f.exists()) {
+                    val content = f.readLines().takeLast(200).joinToString("\n")
+                    runOnUiThread { tvLogContent.text = content }
+                }
+            } catch (e: Exception) { Log.e(TAG, "Read Log Error: ${e.message}") }
+        }.start()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        instance = this
+        if (tts == null) performTtsHardReset()
+        triggerScanIfDisconnected()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        instance = null
+        tts?.stop(); tts?.shutdown()
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) bluetoothGatt?.close()
+    }
+
+    override fun onFlushComplete(requestCode: Int) {}
+    override fun onStatusChanged(p: String?, s: Int, b: Bundle?) {}
+    override fun onProviderEnabled(p: String) {}
+    override fun onProviderDisabled(p: String) {}
+}
