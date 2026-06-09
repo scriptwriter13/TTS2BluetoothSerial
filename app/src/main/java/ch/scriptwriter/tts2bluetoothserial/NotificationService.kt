@@ -1,7 +1,22 @@
-// Filename: NotificationService.kt
-// Datum: 2026-03-29
-// Status: Master-Anker BikeNav_App V4.9 (Overlap-Merger & OsmAnd-Special-Parser)
-// Fokus: Intelligente Zusammenführung von Title und BigText zur Redundanzvermeidung
+/*                                                                                                                                        
+ * Copyright (C) 2026 by scriptwriter13                                                                                       
+ *                                                                                                                                        
+ * Dieses Programm ist freie Software: Sie können es unter den Bedingungen der                                                            
+ * GNU General Public License, wie von der Free Software Foundation veröffentlicht,                                                       
+ * entweder Version 3 der Lizenz oder (nach Ihrer Option) jeder späteren                                                                  
+ * Version, weiterverbreiten und/oder modifizieren.                                                                                       
+ *                                                                                                                                        
+ * Dieses Programm wird in der Hoffnung, dass es nützlich sein wird, aber                                                                 
+ * OHNE JEDE GEWÄHRLEISTUNG, sogar ohne die implizite Gewährleistung der                                                                  
+ * MARKTGÄNGIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK. Siehe die                                                                     
+ * GNU General Public License für weitere Details.                                                                                        
+ *                                                                                                                                        
+ * Sie sollten eine Kopie der GNU General Public License zusammen mit diesem                                                              
+ * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.                                                            
+ */         
+// FILE: app/src/main/java/ch/scriptwriter/tts2bluetoothserial/NotificationService.kt
+// STATUS: FULL ABSOLUTE CONTROL (MASTER ANKER)
+// DATE: 2026-03-29
 
 package ch.scriptwriter.tts2bluetoothserial
 
@@ -13,9 +28,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import android.util.Log
 import androidx.core.app.NotificationCompat
 
 /**
@@ -27,6 +43,26 @@ class NotificationService : NotificationListenerService() {
     private var lastMessage = ""
     private val CHANNEL_ID = "BikeNav_Foreground_Channel"
     private val NOTIFICATION_ID = 101
+    private val TIMEOUT_DURATION = 2 * 60 * 1000L // 2 Minuten
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val timeoutRunnable = Runnable {
+        AppLogger.log("BikeNav_Service", "Timeout erreicht: Sende STOP_BLE_CONNECTION")
+        val intent = Intent("ch.scriptwriter.tts2bluetoothserial.STOP_BLE_CONNECTION")
+        intent.setPackage(packageName)
+        sendBroadcast(intent)
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        AppLogger.init(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, "BikeNav Service", NotificationManager.IMPORTANCE_LOW)
+            )
+        }
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = createForegroundNotification()
@@ -43,6 +79,10 @@ class NotificationService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        // Timer zurücksetzen bei Aktivität
+        handler.removeCallbacks(timeoutRunnable)
+        handler.postDelayed(timeoutRunnable, TIMEOUT_DURATION)
+
         if (sbn.packageName == this.packageName) return
 
         val preferences = getSharedPreferences("NaviSettings", Context.MODE_PRIVATE)
@@ -56,11 +96,11 @@ class NotificationService : NotificationListenerService() {
             val bigText = extras.getCharSequence("android.bigText")?.toString() ?: ""
 
             // --- DEBUG LOG START: Felder gefiltert anzeigen ---
-            Log.d("BikeNav_Debug", "--------------------------------------")
-            Log.d("BikeNav_Debug", ">>> APP: ${sbn.packageName}")
-            Log.d("BikeNav_Debug", ">>> TITLE: $title")
-            Log.d("BikeNav_Debug", ">>> TEXT: ${text.replace("\n", "[\\n]")}")
-            Log.d("BikeNav_Debug", ">>> BIGTEXT: ${bigText.replace("\n", "[\\n]")}")
+            AppLogger.log("BikeNav_Debug", "--------------------------------------")
+            AppLogger.log("BikeNav_Debug", ">>> APP: ${sbn.packageName}")
+            AppLogger.log("BikeNav_Debug", ">>> TITLE: $title")
+            AppLogger.log("BikeNav_Debug", ">>> TEXT: ${text.replace("\n", "[\\n]")}")
+            AppLogger.log("BikeNav_Debug", ">>> BIGTEXT: ${bigText.replace("\n", "[\\n]")}")
             // --- DEBUG LOG END ---
 
             // Inhalts-Priorisierung
@@ -91,7 +131,7 @@ class NotificationService : NotificationListenerService() {
                 // Doubletten-Schutz & Senden
                 if (fullMsg != lastMessage) {
                     lastMessage = fullMsg
-                    Log.d("BikeNav_Service", ">>> RX-NOTIFY: $fullMsg")
+                    AppLogger.log("BikeNav_Service", ">>> RX-NOTIFY: $fullMsg")
                     sendToMainDirect(fullMsg)
                 }
             }
@@ -119,7 +159,7 @@ class NotificationService : NotificationListenerService() {
         try {
             MainActivity.sendBleStatic(message)
         } catch (e: Exception) {
-            Log.e("BikeNav_Service", ">>> Fallback via Broadcast")
+            AppLogger.log("BikeNav_Service", ">>> Fallback via Broadcast")
             val intent = Intent("ch.scriptwriter.tts2bluetoothserial.NOTIFICATION_UPDATE")
             intent.putExtra("msg", message)
             intent.setPackage(this.packageName)
@@ -127,18 +167,13 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "BikeNav Service", NotificationManager.IMPORTANCE_LOW)
-            )
-        }
+    override fun onDestroy() {
+        handler.removeCallbacks(timeoutRunnable)
+        super.onDestroy()
     }
 
     override fun onListenerConnected() {
-        Log.i("BikeNav_Service", ">>> Listener verbunden!")
+        AppLogger.log("BikeNav_Service", ">>> Listener verbunden!")
     }
 
     private fun createForegroundNotification(): Notification {

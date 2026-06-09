@@ -22,3 +22,4 @@ Thumbs.db
 # Android Studio spezielle Files
 /captures/
 *.ext
+.aider*

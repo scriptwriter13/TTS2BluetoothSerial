@@ -16,3 +16,11 @@
 - [x] Fix: Import von NotificationService korrigieren
 - [x] Feature: GPS-Standortzugriff bei Inaktivität (>2min) deaktivieren
 - [x] Docs: Bluetooth-Protokoll-Dokumentation inkl. OsmAnd-Beispielen aktualisiert
+- [x] Feature: Robuste Bluetooth-Reconnect-Logik implementiert (Optimierung: autoConnect=false für manuelle Kontrolle, Intervall auf 3s verkürzt)
+- [x] GPLv3 Header in alle Kotlin-Dateien eingefügt
+- [x] Optimierung: Aggressiverer Reconnect-Scan (Cooldown 10s, periodischer Scan alle 15s)
+- [x] Feature: 2-Minuten-Timeout für BLE-Verbindungsaufbau bei Inaktivität in MyBluetoothTtsService implementiert
+- [x] Feature: 2-Minuten-Timeout für BLE-Verbindungsaufbau bei Inaktivität in NotificationService implementiert
+- [x] Feature: Zentrale AppLogger-Klasse mit Cache- und Disk-Persistence implementiert
+- [x] Feature: Caching der letzten TTS-Nachricht und Re-Send bei Reconnect (Fix: Umstellung auf statischen BrdcastReceiver + SharedPreferences)
+- [x] Fix: BrdcastReceiver lässt SPD-Meldungen jetzt auch bei deaktiviertem TTS/Notification durch (Bypass-Logik)

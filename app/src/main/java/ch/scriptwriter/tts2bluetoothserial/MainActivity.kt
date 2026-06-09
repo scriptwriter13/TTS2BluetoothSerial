@@ -1,7 +1,22 @@
-// Filename: MainActivity.kt
-// Datum: 2026-03-29
-// Update: V5.3 - Master-Anker BikeNav_App (Share-Log-Timestamp)
-// Fokus: Bluetooth-Scan nur bei Bedarf (Navi-Event) + Log-Share mit Zeitstempel-Dateiname
+/*                                                                                                                                        
+ * Copyright (C) 2026 by scriptwriter13                                                                                       
+ *                                                                                                                                        
+ * Dieses Programm ist freie Software: Sie können es unter den Bedingungen der                                                            
+ * GNU General Public License, wie von der Free Software Foundation veröffentlicht,                                                       
+ * entweder Version 3 der Lizenz oder (nach Ihrer Option) jeder späteren                                                                  
+ * Version, weiterverbreiten und/oder modifizieren.                                                                                       
+ *                                                                                                                                        
+ * Dieses Programm wird in der Hoffnung, dass es nützlich sein wird, aber                                                                 
+ * OHNE JEDE GEWÄHRLEISTUNG, sogar ohne die implizite Gewährleistung der                                                                  
+ * MARKTGÄNGIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK. Siehe die                                                                     
+ * GNU General Public License für weitere Details.                                                                                        
+ *                                                                                                                                        
+ * Sie sollten eine Kopie der GNU General Public License zusammen mit diesem                                                              
+ * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.                                                            
+ */         
+// FILE: app/src/main/java/ch/scriptwriter/tts2bluetoothserial/MainActivity.kt
+// STATUS: FULL ABSOLUTE CONTROL (MASTER ANKER)
+// DATE: 2026-03-29
 
 package ch.scriptwriter.tts2bluetoothserial
 
@@ -106,6 +121,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private val foundDevices = mutableListOf<BluetoothDevice>()
     private var isScanning = false
     private var lastScanTimestamp = 0L
+    private var lastLogTimestamp = 0L // Anti-Spam für Log
 
     private val SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private val CHAR_UUID    = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -148,6 +164,16 @@ class MainActivity : AppCompatActivity(), LocationListener {
         }
     }
 
+    // Periodischer Reconnect-Check
+    private val reconnectRunnable = object : Runnable {
+        override fun run() {
+            if (!isBleConnected) {
+                triggerScanIfDisconnected()
+            }
+            handler.postDelayed(this, 15000) // Alle 15 Sekunden prüfen
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -177,6 +203,9 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         // GPS Timeout Check starten
         handler.postDelayed(gpsCheckRunnable, 30000)
+        
+        // Periodischen Reconnect-Check starten
+        handler.postDelayed(reconnectRunnable, 15000)
     }
 
     /**
@@ -186,15 +215,13 @@ class MainActivity : AppCompatActivity(), LocationListener {
     fun triggerScanIfDisconnected() {
         if (isBleConnected || isScanning) return
 
-        // Anti-Spam: Scanne maximal einmal alle 30 Sekunden automatisch
+        // Anti-Spam: Scanne maximal einmal alle 10 Sekunden automatisch (reduziert von 30s)
         val now = System.currentTimeMillis()
-        if (now - lastScanTimestamp < 30000L) {
-            Log.d(TAG, "Scan-Trigger ignoriert (Cooldown aktiv)")
+        if (now - lastScanTimestamp < 10000L) {
             return
         }
 
         lastScanTimestamp = now
-        updateLog("Trigger: Suche HUD...")
         startSmartScan()
     }
 
@@ -294,6 +321,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
         findViewById<Button>(R.id.btnRefreshLog).setOnClickListener {
             lastScanTimestamp = 0L // Reset Cooldown für manuelle Suche
+            lastLogTimestamp = 0L // Auch Log-Cooldown resetten
             triggerScanIfDisconnected()
         }
 
@@ -378,6 +406,14 @@ class MainActivity : AppCompatActivity(), LocationListener {
         if (isBleConnected || isScanning) return
 
         isScanning = true
+        
+        // Anti-Spam für Log: Nur einmal pro Minute loggen
+        val now = System.currentTimeMillis()
+        if (now - lastLogTimestamp > 60000L) {
+            updateLog("Trigger: Suche HUD...")
+            lastLogTimestamp = now
+        }
+        
         foundDevices.clear()
         updateDeviceListView()
 
@@ -721,6 +757,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     override fun onDestroy() {
         super.onDestroy()
         instance = null
+        handler.removeCallbacks(reconnectRunnable) // Cleanup
         tts?.stop(); tts?.shutdown()
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) bluetoothGatt?.close()
     }
