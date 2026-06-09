@@ -24,3 +24,6 @@
 - [x] Feature: Zentrale AppLogger-Klasse mit Cache- und Disk-Persistence implementiert
 - [x] Feature: Caching der letzten TTS-Nachricht und Re-Send bei Reconnect (Fix: Umstellung auf statischen BrdcastReceiver + SharedPreferences)
 - [x] Fix: BrdcastReceiver lässt SPD-Meldungen jetzt auch bei deaktiviertem TTS/Notification durch (Bypass-Logik)
+- [x] Feature: Commit-Message als Parameter in deploy_to_github.sh
+- [x] Feature: Interaktive Commit/Push-Abfrage in deploy_to_github.sh
+- [x] Fix: Automatisches Tagging aus deploy_to_github.sh entfernt
