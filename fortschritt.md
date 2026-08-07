@@ -69,3 +69,4 @@
 - [x] Feature: Firmware-Version Abfrage (GET_FW) beim Wechsel auf Firmware-Tab implementiert
 - [x] Docs: Bluetooth-Protokoll-Dokumentation um GET_HW, GET_FW und OTA-Protokoll erweitert
 - [x] Docs: Bluetooth-Protokoll-Dokumentation um OTA-Service-UUIDs ergänzt
+- [x] Docs: BLUEPRINT.md auf aktuellen Stand (OTA, Firmware-Tab, Protokolle) gebracht
