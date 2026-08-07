@@ -41,6 +41,8 @@ import android.util.Log
 import android.util.Xml
 import android.view.View
 import android.view.ViewGroup
+import org.json.JSONArray
+import org.json.JSONObject
 import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -97,9 +99,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private lateinit var btnTabDevices: Button
     private lateinit var btnTabLog: Button
     private lateinit var btnTabRoute: Button
+    private lateinit var btnTabFirmware: Button
     private lateinit var containerDevices: LinearLayout
     private lateinit var containerLog: LinearLayout
     private lateinit var containerRoute: LinearLayout
+    private lateinit var containerFirmware: LinearLayout
     private lateinit var tvSelectedRoute: TextView
     private lateinit var btnSelectFile: Button
     private lateinit var btnClearRoute: Button
@@ -107,6 +111,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private lateinit var switchTtsEnabled: Switch
     private lateinit var btnSelectNavApps: Button
     private lateinit var tvSelectedAppsCount: TextView
+    private lateinit var firmwareListView: ListView
+    private lateinit var btnCheckFirmware: Button
+    private lateinit var btnDownloadFirmware: Button
+    private lateinit var tvHardwareVersion: TextView
+    private lateinit var tvFirmwareVersion: TextView
 
     private lateinit var etManualCommand: EditText
     private lateinit var btnSendMessage: Button
@@ -125,6 +134,12 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
     private val SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private val CHAR_UUID    = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
+
+    // OTA Konstanten
+    private val OTA_SERVICE_UUID = UUID.fromString("1D14D6EE-FD63-4FA1-BFA4-8F47B42119F0")
+    private val OTA_CHAR_UUID = UUID.fromString("1D14D6EF-FD63-4FA1-BFA4-8F47B42119F0")
+    private val OTA_SECRET_KEY = "BIKE_HUD_OTA_2026"
+    private var otaLatch: java.util.concurrent.CountDownLatch? = null
 
     // GPS & Logik
     private lateinit var locationManager: LocationManager
@@ -145,6 +160,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private var lastPktSendTime = 0L
     private var isFirstFix = true
     private var isWritingBle = false
+
+    // Firmware Variablen
+    private var firmwareReleases = mutableListOf<Pair<String, String>>() // Pair(Tag, DownloadUrl)
+    private var selectedFirmware: Pair<String, String>? = null
+    private var detectedHardwareId: String = "" // Wird durch GET_HW gesetzt
 
     // GPS Inaktivitäts-Management
     private var lastActivityTime = System.currentTimeMillis()
@@ -263,9 +283,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
         btnTabDevices = findViewById(R.id.btnTabDevices)
         btnTabLog = findViewById(R.id.btnTabLog)
         btnTabRoute = findViewById(R.id.btnTabRoute)
+        btnTabFirmware = findViewById(R.id.btnTabFirmware)
         containerDevices = findViewById(R.id.containerDevices)
         containerLog = findViewById(R.id.containerLog)
         containerRoute = findViewById(R.id.containerRoute)
+        containerFirmware = findViewById(R.id.containerFirmware)
         tvSelectedRoute = findViewById(R.id.tvSelectedRoute)
         btnSelectFile = findViewById(R.id.btnSelectFile)
         btnClearRoute = findViewById(R.id.btnClearRoute)
@@ -278,6 +300,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         btnSendMessage = findViewById(R.id.btnSendMessage)
         btnShareLog = findViewById(R.id.btnShareLog)
         btnResetService = findViewById(R.id.btnResetService)
+        firmwareListView = findViewById(R.id.firmwareListView)
 
         // Version & Git-Hash anzeigen
         val tvVersion = TextView(this)
@@ -289,9 +312,33 @@ class MainActivity : AppCompatActivity(), LocationListener {
         // Hinzufügen an Index 0, damit es oben erscheint
         containerDevices.addView(tvVersion, 0)
 
+        btnCheckFirmware = findViewById(R.id.btnCheckFirmware)
+        btnCheckFirmware.setOnClickListener {
+            fetchFirmwareReleases()
+        }
+
+        btnDownloadFirmware = findViewById(R.id.btnDownloadFirmware)
+        btnDownloadFirmware.isEnabled = false
+        btnDownloadFirmware.setOnClickListener {
+            downloadFirmware()
+        }
+
+        tvHardwareVersion = TextView(this)
+        tvHardwareVersion.setTextColor(Color.GRAY)
+        tvHardwareVersion.textSize = 14f
+        tvHardwareVersion.text = "Hardware: Wird geladen..."
+        containerFirmware.addView(tvHardwareVersion, 1)
+
+        tvFirmwareVersion = TextView(this)
+        tvFirmwareVersion.setTextColor(Color.GRAY)
+        tvFirmwareVersion.textSize = 14f
+        tvFirmwareVersion.text = "Firmware: Wird geladen..."
+        containerFirmware.addView(tvFirmwareVersion, 2)
+
         btnTabDevices.setOnClickListener { switchTab(0) }
         btnTabLog.setOnClickListener { switchTab(1) }
         btnTabRoute.setOnClickListener { switchTab(2) }
+        btnTabFirmware.setOnClickListener { switchTab(3) }
 
         btnSelectFile.setOnClickListener {
             val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -371,6 +418,19 @@ class MainActivity : AppCompatActivity(), LocationListener {
         containerDevices.visibility = if (i == 0) View.VISIBLE else View.GONE
         containerLog.visibility = if (i == 1) View.VISIBLE else View.GONE
         containerRoute.visibility = if (i == 2) View.VISIBLE else View.GONE
+        containerFirmware.visibility = if (i == 3) View.VISIBLE else View.GONE
+        
+        if (i == 3) {
+            if (isBleConnected) {
+                sendMessageToBle("GET_HW")
+                // Kleine Verzögerung, damit das Flag 'isWritingBle' zurückgesetzt werden kann
+                handler.postDelayed({ sendMessageToBle("GET_FW") }, 200)
+            } else {
+                tvHardwareVersion.text = "Hardware: Nicht verbunden"
+                tvFirmwareVersion.text = "Firmware: Nicht verbunden"
+            }
+        }
+        
         if (i == 1) logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
     }
 
@@ -476,20 +536,77 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 lastConnectedDeviceAddress = gatt.device.address
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(KEY_LAST_BLE_ADDR, lastConnectedDeviceAddress).apply()
                 if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) gatt.discoverServices()
+                runOnUiThread { updateFirmwareButtonState() }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 isBleConnected = false
                 writeCharacteristic = null
-                runOnUiThread { updateDeviceListView() }
+                runOnUiThread { 
+                    updateDeviceListView()
+                    updateFirmwareButtonState()
+                }
                 updateLog("Warnung: HUD verloren")
             }
         }
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             val service = gatt.getService(SERVICE_UUID)
             writeCharacteristic = service?.getCharacteristic(CHAR_UUID)
+            
             if (writeCharacteristic != null) {
-                if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) gatt.requestMtu(512)
+                // 1. MTU anfordern
+                if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                    gatt.requestMtu(517)
+                    
+                    // 2. WICHTIG: Notifications für UART-Antworten aktivieren
+                    gatt.setCharacteristicNotification(writeCharacteristic, true)
+                    val cccUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+                    val descriptor = writeCharacteristic?.getDescriptor(cccUuid)
+                    if (descriptor != null) {
+                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        gatt.writeDescriptor(descriptor)
+                    }
+                }
+                
                 updateLog("System: HUD bereit")
                 runOnUiThread { startGpsUpdates(); updateDeviceListView() }
+            }
+        }
+
+        override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.d(TAG, "OTA: Descriptor erfolgreich geschrieben (Notifications aktiv)")
+            }
+        }
+
+        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+            // 1. Rohdaten als String lesen
+            val value = characteristic.value
+            val response = if (value != null) String(value, Charsets.UTF_8) else ""
+            
+            // 2. Debug-Log mit Hex-Werten, um versteckte Zeichen zu sehen
+            val hexString = value?.joinToString("") { "%02x".format(it) } ?: "null"
+            Log.d(TAG, "OTA-DEBUG: Empfangen: '$response' (Hex: $hexString) auf UUID: ${characteristic.uuid}")
+
+            // 3. Robuste Prüfung: UUID-Check entfernen, nur auf Inhalt prüfen
+            // Wir prüfen, ob "READY" im String enthalten ist (egal welche UUID)
+            if (response.contains("READY", ignoreCase = true)) {
+                Log.d(TAG, "OTA-DEBUG: READY erkannt!")
+                otaLatch?.countDown()
+            }
+
+            if (response.startsWith("HW:")) {
+                detectedHardwareId = response.substring(3).trim()
+                runOnUiThread {
+                    tvHardwareVersion.text = "Hardware: $detectedHardwareId"
+                    updateLog("System: Hardware erkannt: $detectedHardwareId")
+                }
+            }
+
+            if (response.startsWith("FW:")) {
+                val fwVersion = response.substring(3).trim()
+                runOnUiThread {
+                    tvFirmwareVersion.text = "Firmware: $fwVersion"
+                    updateLog("System: Firmware erkannt: $fwVersion")
+                }
             }
         }
     }
@@ -688,6 +805,267 @@ class MainActivity : AppCompatActivity(), LocationListener {
         char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
         bluetoothGatt?.writeCharacteristic(char)
         handler.postDelayed({ isWritingBle = false }, 50)
+    }
+
+    private fun fetchFirmwareReleases() {
+        updateLog("System: Starte Release-Abfrage...")
+        
+        Thread {
+            try {
+                val url = java.net.URL("https://api.github.com/repos/scriptwriter13/Navi_Display_ESP32C3/releases")
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                // FIX: User-Agent hinzufügen (GitHub API Anforderung)
+                connection.setRequestProperty("User-Agent", "BikeNav-App")
+                
+                if (connection.responseCode == 200) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    val jsonArray = org.json.JSONArray(response)
+                    
+                    val newList = mutableListOf<Pair<String, String>>()
+                    for (i in 0 until jsonArray.length()) {
+                        val obj = jsonArray.getJSONObject(i)
+                        val tagName = obj.getString("tag_name")
+                        val assets = obj.getJSONArray("assets")
+                        var downloadUrl = ""
+                        
+                        // Debug: Logge, wenn ein Release keine Assets hat
+                        if (assets.length() == 0) Log.d(TAG, "Release $tagName hat keine Assets")
+
+                        for (j in 0 until assets.length()) {
+                            val asset = assets.getJSONObject(j)
+                            val name = asset.getString("name")
+                            
+                            // Filter: Asset muss .bin/.zip sein UND die Hardware-ID im Namen enthalten
+                            // Wenn noch keine HW erkannt wurde (leer), zeigen wir zur Sicherheit alles an
+                            val isCorrectHardware = detectedHardwareId.isEmpty() || name.contains(detectedHardwareId, ignoreCase = true)
+                            
+                            if (isCorrectHardware && (name.endsWith(".bin", ignoreCase = true) || name.endsWith(".zip", ignoreCase = true))) {
+                                downloadUrl = asset.getString("browser_download_url")
+                                break
+                            }
+                        }
+                        
+                        if (downloadUrl.isNotEmpty()) {
+                            newList.add(tagName to downloadUrl)
+                        } else {
+                            Log.d(TAG, "Release $tagName übersprungen (kein passendes Asset)")
+                        }
+                    }
+                    
+                    runOnUiThread {
+                        firmwareReleases.clear()
+                        firmwareReleases.addAll(newList)
+                        updateFirmwareListView()
+                        updateLog("System: ${newList.size} Releases gefunden")
+                    }
+                } else {
+                    // Verbessertes Fehler-Logging
+                    val error = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Kein Fehlertext"
+                    runOnUiThread { updateLog("Fehler: API Antwort ${connection.responseCode} - $error") }
+                }
+            } catch (e: Exception) {
+                val errorMsg = e.message ?: "Unbekannter Fehler"
+                runOnUiThread { updateLog("Fehler: $errorMsg") }
+                Log.e(TAG, "Firmware Fetch Error", e)
+            }
+        }.start()
+    }
+
+    private fun updateFirmwareButtonState() {
+        runOnUiThread {
+            btnDownloadFirmware.isEnabled = isBleConnected && selectedFirmware != null
+        }
+    }
+
+    private fun updateFirmwareListView() {
+        val names = firmwareReleases.map { it.first }
+        
+        firmwareListView.adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, names) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                // Wir casten auf TextView, da simple_list_item_single_choice eine CheckedTextView ist (erbt von TextView)
+                val view = super.getView(position, convertView, parent) as TextView
+                val tagName = getItem(position) ?: ""
+                val file = File(filesDir, "firmware_$tagName.bin")
+                
+                // Aktuell laufende Version aus dem TextView extrahieren
+                val currentRunningVersion = tvFirmwareVersion.text.toString().replace("Firmware: ", "").trim()
+
+                // Logik:
+                // 1. Wenn es die aktuell laufende Version ist -> Hellblau + Text "(installiert)"
+                // 2. Wenn es nur gecacht ist -> Dunkelgrün
+                // 3. Sonst -> Transparent
+                if (tagName == currentRunningVersion && currentRunningVersion != "Wird geladen...") {
+                    view.text = "$tagName (installiert)"
+                    view.setBackgroundColor(Color.parseColor("#ADD8E6")) // Hellblau
+                } else {
+                    view.text = tagName // Text zurücksetzen, falls View recycelt wurde
+                    if (file.exists()) {
+                        view.setBackgroundColor(Color.parseColor("#2E7D32")) // Dunkelgrün
+                    } else {
+                        view.setBackgroundColor(Color.TRANSPARENT)
+                    }
+                }
+                return view
+            }
+        }
+        
+        firmwareListView.choiceMode = ListView.CHOICE_MODE_SINGLE
+        firmwareListView.setOnItemClickListener { _, _, position, _ ->
+            selectedFirmware = firmwareReleases[position]
+            val tagName = selectedFirmware!!.first
+            val file = File(filesDir, "firmware_$tagName.bin")
+            
+            if (file.exists()) {
+                btnDownloadFirmware.text = "Flash Firmware"
+                btnDownloadFirmware.setOnClickListener { flashFirmware(file) }
+            } else {
+                btnDownloadFirmware.text = "Firmware herunterladen"
+                btnDownloadFirmware.setOnClickListener { downloadFirmware() }
+            }
+            updateLog("Ausgewählt: $tagName")
+            updateFirmwareButtonState()
+        }
+    }
+
+    private fun flashFirmware(file: File) {
+        val gatt = bluetoothGatt ?: return
+        val service = gatt.getService(OTA_SERVICE_UUID)
+        val char = service?.getCharacteristic(OTA_CHAR_UUID)
+        
+        if (char == null) {
+            updateLog("Fehler: OTA Service nicht gefunden")
+            return
+        }
+
+        // UI-Update auf dem Main-Thread erzwingen
+        runOnUiThread {
+            btnDownloadFirmware.isEnabled = false
+            btnDownloadFirmware.text = "Flashe..."
+        }
+
+        Thread {
+            try {
+                updateLog("System: Starte OTA...")
+                otaLatch = java.util.concurrent.CountDownLatch(1)
+                
+                // 1. Notification lokal aktivieren
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                    gatt.setCharacteristicNotification(char, true)
+                    
+                    val cccUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+                    val descriptor = char.getDescriptor(cccUuid)
+                    if (descriptor != null) {
+                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        gatt.writeDescriptor(descriptor)
+                        Thread.sleep(1000) 
+                    }
+                }
+
+                // 2. START senden
+                char.value = "START:$OTA_SECRET_KEY".toByteArray()
+                char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                gatt.writeCharacteristic(char)
+
+                // 3. Warten auf Antwort (max 5s)
+                if (!otaLatch!!.await(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    throw Exception("Timeout: Keine Antwort vom HUD")
+                }
+
+                // 4. Daten senden
+                val bytes = file.readBytes()
+                val chunkSize = 514 
+                var offset = 0
+                
+                while (offset < bytes.size) {
+                    val end = minOf(offset + chunkSize, bytes.size)
+                    val chunk = bytes.copyOfRange(offset, end)
+                    
+                    char.value = chunk
+                    gatt.writeCharacteristic(char)
+                    
+                    offset += chunkSize
+                    Thread.sleep(30) 
+                }
+
+                // 5. END senden
+                char.value = "END".toByteArray()
+                gatt.writeCharacteristic(char)
+                
+                runOnUiThread {
+                    updateLog("System: OTA Übertragung abgeschlossen")
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("OTA Update")
+                        .setMessage("Firmware erfolgreich übertragen!")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    updateLog("Fehler: OTA fehlgeschlagen: ${e.message}")
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("OTA Update Fehler")
+                        .setMessage("Fehler: ${e.message}")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            } finally {
+                // KORREKTUR HIER:
+                // Nicht hart auf true setzen, sondern den Status neu berechnen lassen
+                runOnUiThread {
+                    btnDownloadFirmware.text = "Flash Firmware"
+                    updateFirmwareButtonState() 
+                }
+            }
+        }.start()
+    }
+
+    private fun downloadFirmware() {
+        val firmware = selectedFirmware
+        if (firmware == null) {
+            updateLog("Fehler: Keine Firmware gewählt")
+            return
+        }
+
+        updateLog("System: Download startet...")
+        Thread {
+            try {
+                val connection = java.net.URL(firmware.second).openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 5000
+                connection.readTimeout = 10000
+                
+                if (connection.responseCode == 200) {
+                    // Speichern mit Tag-Name
+                    val fileName = "firmware_${firmware.first}.bin"
+                    val file = File(filesDir, fileName)
+                    val inputStream = connection.inputStream
+                    val outputStream = FileOutputStream(file)
+                    
+                    val buffer = ByteArray(4096)
+                    var bytesRead: Int
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        outputStream.write(buffer, 0, bytesRead)
+                    }
+                    
+                    outputStream.close()
+                    inputStream.close()
+                    
+                    runOnUiThread { 
+                        updateLog("System: Download fertig: $fileName")
+                        updateFirmwareListView()
+                        // Button auf Flash umstellen nach Download
+                        btnDownloadFirmware.text = "Flash Firmware"
+                        btnDownloadFirmware.setOnClickListener { flashFirmware(file) }
+                    }
+                } else {
+                    runOnUiThread { updateLog("Fehler: Download fehlgeschlagen (${connection.responseCode})") }
+                }
+            } catch (e: Exception) {
+                runOnUiThread { updateLog("Fehler: ${e.message}") }
+            }
+        }.start()
     }
 
     private fun clearRoute() {

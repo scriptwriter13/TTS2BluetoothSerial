@@ -76,6 +76,20 @@
 
             android:textAllCaps="false" />
 
+        <Button
+
+            android:id="@+id/btnTabFirmware"
+
+            android:layout_width="0dp"
+
+            android:layout_height="wrap_content"
+
+            android:layout_weight="1"
+
+            android:text="Firmware"
+
+            android:textAllCaps="false" />
+
     </LinearLayout>
 
 
@@ -443,6 +457,70 @@
                 android:layout_marginTop="8dp" />
 
 
+
+        </LinearLayout>
+
+
+
+        <LinearLayout
+
+            android:id="@+id/containerFirmware"
+
+            android:layout_width="match_parent"
+
+            android:layout_height="match_parent"
+
+            android:orientation="vertical"
+
+            android:visibility="gone"
+
+            android:padding="16dp">
+
+
+
+            <TextView
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:text="Firmware Update per BLE-OTA"
+
+                android:textColor="#FFFFFF"
+
+                android:textSize="18sp"
+
+                android:textStyle="bold"
+
+                android:layout_marginBottom="16dp" />
+
+
+
+            <Button
+
+                android:id="@+id/btnCheckFirmware"
+
+                android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
+
+                android:text="Auf Updates prüfen" />
+
+            <ListView
+                android:id="@+id/firmwareListView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="16dp"
+                android:divider="#333333"
+                android:dividerHeight="1dp" />
+
+            <Button
+                android:id="@+id/btnDownloadFirmware"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Firmware herunterladen"
+                android:layout_marginTop="16dp" />
 
         </LinearLayout>
 

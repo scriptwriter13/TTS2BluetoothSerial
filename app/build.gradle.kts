@@ -18,7 +18,7 @@ fun getGitHash(): String {
 
 android {
     namespace = "ch.scriptwriter.tts2bluetoothserial"
-    compileSdk = 36
+    compileSdk = 35
 
     buildFeatures {
         buildConfig = true
@@ -27,7 +27,7 @@ android {
     defaultConfig {
         applicationId = "ch.scriptwriter.tts2bluetoothserial"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -44,16 +44,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-	    // HIER DIESE ZEILE HINZUFÜGEN:
-            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 }
 

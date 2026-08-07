@@ -7,6 +7,7 @@
 - [x] Versionsnummer im Gerätetab anzeigen
 - [x] Git-Commit-Hash im Gerätetab anzeigen
 - [x] Build-Fehler behoben: buildConfig aktiviert
+- [x] Build-Fehler behoben: SDK Version auf 35 angepasst und SigningConfig korrigiert
 - [x] Fix: Routen-Springen durch begrenztes Suchfenster in reLockPoint behoben
 - [x] App-Package auf ch.scriptwriter.tts2bluetoothserial umgestellt
 - [x] AndroidManifest.xml auf neues Package aktualisiert
@@ -27,3 +28,39 @@
 - [x] Feature: Commit-Message als Parameter in deploy_to_github.sh
 - [x] Feature: Interaktive Commit/Push-Abfrage in deploy_to_github.sh
 - [x] Fix: Automatisches Tagging aus deploy_to_github.sh entfernt
+- [x] Docs: BLUEPRINT.md aktualisiert und verfeinert
+- [x] Feature: Firmware-Tab in UI hinzufügen
+- [x] Feature: GitHub-Release-Abfrage für Firmware implementieren
+- [x] Feature: Visuelle Kennzeichnung (Grün) für gecachte Firmware-Versionen
+- [x] Feature: Dynamischer Button (Download vs. Flash) basierend auf Cache-Status
+- [x] Fix: Firmware-Button Initialisierung in MainActivity
+- [x] Fix: Internet-Berechtigung und Fehler-Logging für Firmware-Abfrage
+- [x] Fix: Build-Fehler durch korrekte signingConfig-Syntax behoben
+- [x] Fix: Build-Konfiguration (AGP Version & SDK 34)
+- [x] Fix: Build-Fehler durch Entfernen der fehlerhaften signingConfig behoben
+- [x] Fix: Importe für JSON in MainActivity
+- [x] Fix: Gradle-Konfiguration bereinigt (deprecated Flags aus gradle.properties entfernt)
+- [x] Feature: Firmware-Download-Logik (Cache) implementieren
+- [x] Feature: Visuelle Kennzeichnung (Grün) für gecachte Firmware-Versionen
+- [x] Fix: Firmware-ListView in activity_main.xml hinzugefügt (ID-Fehler behoben)
+- [x] Build: Gradle-Konfiguration auf Java 17 und SDK 35 aktualisiert
+- [x] Fix: GitHub API Abfrage korrigiert (User-Agent Header hinzugefügt)
+- [x] Feature: OTA-Protokoll Implementierung (Handshake, Chunking, Flow-Control)
+- [x] OTA_SECRET_KEY in MainActivity.kt aktualisiert
+- [x] Fix: OTA-Service auf UART-Service umgestellt (UUIDs angepasst)
+- [x] Fix: OTA-UUIDs auf spezifische Werte (1D14D6EE...) aktualisiert
+- [x] Fix: OTA-Handshake-Empfang (Descriptor-Write & Notification-Handling)
+- [x] Fix: Robuster OTA-Handshake-Empfang (UUID-Check entfernt, String-Parsing verbessert)
+- [x] Feature: Popup-Benachrichtigung (AlertDialog) für OTA-Erfolg/Fehler hinzugefügt
+- [x] Feature: Button-Deaktivierung während Flash-Vorgang (UX-Verbesserung)
+- [x] Fix: UI-Feedback und Button-Status während Flash-Vorgang verbessert
+- [x] Feature: Firmware-Button-Status an BLE-Verbindung gekoppelt
+- [x] Fix: Button-Status-Logik im finally-Block von flashFirmware korrigiert
+- [x] Feature: Hardware-Version Abfrage (GET_HW) beim Wechsel auf Firmware-Tab implementiert
+- [x] Fix: Notifications für UART-Characteristic aktiviert (Empfang von HW-Antworten)
+- [x] Feature: Hardware-spezifische Firmware-Filterung implementiert
+- [x] Feature: Firmware-Version Abfrage (GET_FW) beim Wechsel auf Firmware-Tab implementiert
+- [x] Fix: Race Condition bei BLE-Befehlsfolge (GET_HW/GET_FW) durch Delay behoben
+- [x] Feature: Visuelle Kennzeichnung (Hellblau) für aktuell laufende Firmware-Version
+- [x] Feature: Text-Erweiterung "(installiert)" für aktive Firmware-Version in der Liste
+- [x] UI-Anpassung: Titel im Firmware-Tab auf "Firmware Update per BLE-OTA" geändert
