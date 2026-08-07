@@ -65,3 +65,7 @@
 - [x] Feature: Visuelle Kennzeichnung (Hellblau) für aktuell laufende Firmware-Version
 - [x] Feature: Text-Erweiterung "(installiert)" für aktive Firmware-Version in der Liste
 - [x] UI-Anpassung: Titel im Firmware-Tab auf "Firmware Update per BLE-OTA" geändert
+- [x] Review: Bluetooth-Protokoll-Dokumentation gegen Implementierung geprüft
+- [x] Feature: Firmware-Version Abfrage (GET_FW) beim Wechsel auf Firmware-Tab implementiert
+- [x] Docs: Bluetooth-Protokoll-Dokumentation um GET_HW, GET_FW und OTA-Protokoll erweitert
+- [x] Docs: Bluetooth-Protokoll-Dokumentation um OTA-Service-UUIDs ergänzt
