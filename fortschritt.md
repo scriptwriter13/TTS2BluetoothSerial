@@ -58,6 +58,7 @@
 - [x] Fix: Button-Status-Logik im finally-Block von flashFirmware korrigiert
 - [x] Feature: Hardware-Version Abfrage (GET_HW) beim Wechsel auf Firmware-Tab implementiert
 - [x] Fix: Notifications für UART-Characteristic aktiviert (Empfang von HW-Antworten)
+- [x] Workflow: Neue Arbeitsweise mit `fortschritt.md` als integraler Bestandteil etabliert
 - [x] Feature: Hardware-spezifische Firmware-Filterung implementiert
 - [x] Feature: Firmware-Version Abfrage (GET_FW) beim Wechsel auf Firmware-Tab implementiert
 - [x] Fix: Race Condition bei BLE-Befehlsfolge (GET_HW/GET_FW) durch Delay behoben
