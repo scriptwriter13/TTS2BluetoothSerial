@@ -1,72 +1,67 @@
-# Bluetooth Protokoll-Dokumentation
+# Bluetooth Protocol Documentation / Bluetooth Protokoll-Dokumentation
 
-Diese App kommuniziert über Bluetooth Low Energy (BLE) mit einem Head-Up-Display (HUD). Es werden zwei separate Services verwendet: einer für die allgemeine Kommunikation (UART) und einer für Firmware-Updates (OTA).
+This document describes the BLE communication between the Android App and the HUD.
+Dieses Dokument beschreibt die BLE-Kommunikation zwischen der Android-App und dem HUD.
 
-## 1. UART Service (Allgemeine Kommunikation)
-Dieser Service wird für Navigation, Geschwindigkeit und System-Status verwendet.
+## 1. Services & UUIDs
+The system uses two separate services. / Das System verwendet zwei separate Services.
+
+### UART Service (General Communication / Allgemeine Kommunikation)
 - **Service UUID:** `6E400001-B5A3-F393-E0A9-E50E24DCCA9E`
-- **Write Charakteristik UUID:** `6E400002-B5A3-F393-E0A9-E50E24DCCA9E`
+- **Write Characteristic UUID:** `6E400002-B5A3-F393-E0A9-E50E24DCCA9E`
 
-## 2. OTA Service (Firmware Updates)
-Dieser Service wird ausschließlich für den Flash-Vorgang genutzt.
+### OTA Service (Firmware Updates)
 - **Service UUID:** `1D14D6EE-FD63-4FA1-BFA4-8F47B42119F0`
-- **Write Charakteristik UUID:** `1D14D6EF-FD63-4FA1-BFA4-8F47B42119F0`
+- **Write Characteristic UUID:** `1D14D6EF-FD63-4FA1-BFA4-8F47B42119F0`
 
-## Protokoll-Format
-Die meisten Nachrichten werden als UTF-8 kodierte Strings gesendet und müssen mit einem Zeilenumbruch (`\n`) abgeschlossen werden. Ausnahmen bilden die binären OTA-Datenpakete.
+## 2. Protocol Format / Protokoll-Format
+Messages are UTF-8 encoded strings, terminated by a newline (`\n`). OTA data is binary.
+Nachrichten sind UTF-8 kodierte Strings, abgeschlossen mit einem Zeilenumbruch (`\n`). OTA-Daten sind binär.
 
-### 1. Unterstützte Befehls-Präfixe (Text-basiert)
-
+### Text Commands / Text-Befehle
 1. **`NAV:` (Navigation)**
-   - Format: `NAV:<Nachricht>`
-   - Beispiel: `NAV:Links abbiegen`
+   - Format: `NAV:<Message>`
+   - Example: `NAV:Turn left` / `NAV:Links abbiegen`
 
-2. **`SPD:` (Geschwindigkeit)**
-   - Format: `SPD:<Geschwindigkeit_in_km/h>`
-   - Beispiel: `SPD:25`
+2. **`SPD:` (Speed / Geschwindigkeit)**
+   - Format: `SPD:<Speed_in_km/h>`
+   - Example: `SPD:25`
 
-3. **`PKT:` (Wegpunkt-Information)**
-   - Format: `PKT:<Winkel>;<Distanz>;<Index>`
-   - Beispiel: `PKT:45;120;5`
+3. **`PKT:` (Waypoint / Wegpunkt)**
+   - Format: `PKT:<Angle>;<Distance>;<Index>`
+   - Example: `PKT:45;120;5`
 
-4. **`STT:` (System-Status)**
-   - Format: `STT:<Statusmeldung>`
-   - Beispiel: `STT:TTS bereit.`
+4. **`STT:` (System Status)**
+   - Format: `STT:<Status_Message>`
+   - Example: `STT:TTS ready.` / `STT:TTS bereit.`
 
-### 2. System-Abfragen (Request/Response)
+### System Requests / System-Abfragen
+1. **`GET_HW` (Hardware ID)**
+   - Request: `GET_HW`
+   - Response: `HW:<Hardware_ID>` (e.g., `HW:ESP32-2424S012-V1.0`)
 
-Diese Befehle werden von der App gesendet, um Geräteinformationen abzurufen.
+2. **`GET_FW` (Firmware Version)**
+   - Request: `GET_FW`
+   - Response: `FW:<Version>` (e.g., `FW:1.0.0`)
 
-1. **`GET_HW` (Hardware-Abfrage)**
-   - App sendet: `GET_HW`
-   - Gerät antwortet: `HW:<Hardware_ID>` (z.B. `HW:ESP32-2424S012-V1.0`)
-
-2. **`GET_FW` (Firmware-Abfrage)**
-   - App sendet: `GET_FW`
-   - Gerät antwortet: `FW:<Version>` (z.B. `FW:1.0.0`)
-
-### 3. OTA-Protokoll (Binär-basiert)
-
-Für Firmware-Updates wird ein spezielles Protokoll verwendet.
-
+## 3. OTA Protocol (Binary / Binär)
 1. **Handshake:**
-   - App sendet: `START:<OTA_SECRET_KEY>`
-   - Gerät antwortet: `READY` (bei Erfolg)
+   - App sends: `START:<OTA_SECRET_KEY>`
+   - Device responds: `READY`
 
-2. **Datenübertragung:**
-   - Binäre Chunks (MTU-optimiert, ca. 514 Bytes).
-   - Modus: `WRITE_NO_RESPONSE`.
-   - Flow Control: 30ms Pause zwischen den Paketen.
+2. **Data Transfer / Datenübertragung:**
+   - Binary chunks (MTU-optimized, ~514 bytes).
+   - Mode: `WRITE_NO_RESPONSE`.
+   - Flow Control: 30ms delay between packets. / 30ms Pause zwischen Paketen.
 
-3. **Abschluss:**
-   - App sendet: `END`
-   - Gerät validiert und startet neu.
+3. **Completion / Abschluss:**
+   - App sends: `END`
+   - Device validates and reboots. / Gerät validiert und startet neu.
 
-## Besonderheiten bei OsmAnd
-Die App erkennt Benachrichtigungen von OsmAnd automatisch.
-- **Format:** `NAV:<Anweisung>|OSMAND`
-- **Verarbeitung:** Entfernt redundante Titel, ersetzt Zeilenumbrüche durch `|`.
+## OsmAnd Integration
+- **Format:** `NAV:<Instruction>|OSMAND`
+- **Processing:** Removes redundant titles, replaces newlines with `|`. / Entfernt redundante Titel, ersetzt Zeilenumbrüche durch `|`.
 
-## Übertragung
-- Die Nachrichten werden über die `writeCharacteristic` gesendet.
-- Die App stellt sicher, dass jede Text-Nachricht mit einem `\n` endet.
+## Transmission / Übertragung
+- Messages are sent via `writeCharacteristic`.
+- App ensures every text message ends with `\n`. / Die App stellt sicher, dass jede Text-Nachricht mit `\n` endet.

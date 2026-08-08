@@ -42,9 +42,6 @@ object AppLogger {
     }
 
     fun log(tag: String, message: String) {
-        // Auch in Logcat ausgeben für Debugging
-        Log.d(tag, message)
-        
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
         val entry = "$timestamp [$tag] $message"
         synchronized(logCache) {

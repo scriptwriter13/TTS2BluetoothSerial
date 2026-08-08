@@ -81,11 +81,13 @@ class MainActivity : AppCompatActivity(), LocationListener {
         // Zentraler Einstiegspunkt für den NotificationService
         fun sendBleStatic(data: String) {
             instance?.let { main ->
-                // Hier explizit restartGps = true, da eine Nachricht reinkommt
-                main.updateLog(data, restartGps = true)
-                // V5.1: Trigger den Scan, falls die Nachricht ins Leere laufen würde
                 if (!main.isBleConnected) {
-                    main.runOnUiThread { main.triggerScanIfDisconnected() }
+                    main.pendingMessage = data // Nachricht zwischenspeichern
+                    // Force=true, damit der Scan sofort startet, wenn eine Navi-App aktiv wird
+                    main.runOnUiThread { main.triggerScanIfDisconnected(force = true) }
+                } else {
+                    // Hier explizit restartGps = true, da eine Nachricht reinkommt
+                    main.updateLog(data, restartGps = true)
                 }
                 Log.d("BikeNav_Main", ">>> [STATIC-IN]: $data")
             } ?: Log.e("BikeNav_Main", ">>> Fehler: MainActivity Instanz nicht bereit!")
@@ -114,6 +116,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private lateinit var firmwareListView: ListView
     private lateinit var btnCheckFirmware: Button
     private lateinit var btnDownloadFirmware: Button
+    private lateinit var btnClearCache: Button
     private lateinit var tvHardwareVersion: TextView
     private lateinit var tvFirmwareVersion: TextView
 
@@ -127,7 +130,10 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private var writeCharacteristic: BluetoothGattCharacteristic? = null
     var isBleConnected = false // Jetzt intern lesbar für Companion
     private var lastConnectedDeviceAddress: String? = null
-    private val foundDevices = mutableListOf<BluetoothDevice>()
+    
+    // Map statt Liste, um RSSI zu speichern
+    private val foundDevices = mutableMapOf<String, ScanResult>() 
+    
     private var isScanning = false
     private var lastScanTimestamp = 0L
     private var lastLogTimestamp = 0L // Anti-Spam für Log
@@ -160,6 +166,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private var lastPktSendTime = 0L
     private var isFirstFix = true
     private var isWritingBle = false
+    private var lastLogContent = "" // Tracking für Auto-Scroll
+    private var pendingMessage: String? = null // Puffer für Nachrichten
 
     // Firmware Variablen
     private var firmwareReleases = mutableListOf<Pair<String, String>>() // Pair(Tag, DownloadUrl)
@@ -173,11 +181,17 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
     private var tts: TextToSpeech? = null
 
+    private fun isSystemActive(): Boolean {
+        val navActive = NotificationService.instance?.isAnyNavAppActive() ?: false
+        val ttsActive = tts?.isSpeaking ?: false
+        return navActive || ttsActive
+    }
+
     private val gpsCheckRunnable = object : Runnable {
         override fun run() {
-            if (isGpsActive && (System.currentTimeMillis() - lastActivityTime > GPS_TIMEOUT)) {
+            // Wenn System inaktiv UND Timeout überschritten -> GPS aus
+            if (isGpsActive && !isSystemActive() && (System.currentTimeMillis() - lastActivityTime > GPS_TIMEOUT)) {
                 stopGpsUpdates()
-                // WICHTIG: Hier kein updateLog aufrufen, das GPS reaktivieren würde
                 Log.d(TAG, "System: GPS Standby (Inaktiv)")
             }
             handler.postDelayed(this, 30000) // Alle 30 Sekunden prüfen
@@ -187,15 +201,63 @@ class MainActivity : AppCompatActivity(), LocationListener {
     // Periodischer Reconnect-Check
     private val reconnectRunnable = object : Runnable {
         override fun run() {
-            if (!isBleConnected) {
+            // Nur automatisch scannen, wenn wir nicht verbunden sind UND das System aktiv ist
+            if (!isBleConnected && isSystemActive()) {
                 triggerScanIfDisconnected()
             }
-            handler.postDelayed(this, 15000) // Alle 15 Sekunden prüfen
+            handler.postDelayed(this, 60000) // Alle 60 Sekunden prüfen
         }
+    }
+
+    private val heartbeatRunnable = object : Runnable {
+        override fun run() {
+            val active = isSystemActive()
+            if (isBleConnected && active) {
+                sendMessageToBle("STT:ALIVE")
+                Log.d(TAG, "Heartbeat gesendet (System aktiv)")
+            }
+            
+            // Dynamisches Intervall: 10s bei Aktivität, 30s bei Inaktivität
+            val delay = if (active) 10000L else 30000L
+            handler.postDelayed(this, delay)
+        }
+    }
+
+    private val logUpdateRunnable = object : Runnable {
+        override fun run() {
+            if (containerLog.visibility == View.VISIBLE) {
+                val allLogs = AppLogger.getLogs()
+                
+                // 1. Filtere ACKs für die Anzeige
+                val displayLogs = allLogs.filter { !it.contains("ACK", ignoreCase = true) }
+                
+                // 2. Prüfe, ob das letzte Log ein ACK war, um den Effekt auszulösen
+                if (allLogs.isNotEmpty() && allLogs.last().contains("ACK", ignoreCase = true)) {
+                    triggerAckVisual()
+                }
+
+                val content = displayLogs.takeLast(100).joinToString("\n")
+                if (content != lastLogContent) {
+                    tvLogContent.text = content
+                    logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
+                    lastLogContent = content
+                }
+            }
+            handler.postDelayed(this, 2000)
+        }
+    }
+
+    // Visueller Effekt: Hintergrund kurz grün
+    private fun triggerAckVisual() {
+        tvLogContent.setBackgroundColor(Color.parseColor("#004400")) // Dunkelgrün
+        handler.postDelayed({
+            tvLogContent.setBackgroundColor(Color.parseColor("#1E1E1E")) // Zurück zum Standard
+        }, 200)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLogger.init(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
@@ -225,19 +287,25 @@ class MainActivity : AppCompatActivity(), LocationListener {
         handler.postDelayed(gpsCheckRunnable, 30000)
         
         // Periodischen Reconnect-Check starten
-        handler.postDelayed(reconnectRunnable, 15000)
+        handler.postDelayed(reconnectRunnable, 60000)
+        
+        // Heartbeat starten
+        handler.post(heartbeatRunnable)
+        
+        // Log-Update-Throttling starten
+        handler.postDelayed(logUpdateRunnable, 500)
     }
 
     /**
      * V5.1: Die "Passive-Trigger" Kernfunktion.
      * Wird aufgerufen, wenn eine Nachricht reinkommt, aber keine Verbindung besteht.
      */
-    fun triggerScanIfDisconnected() {
+    fun triggerScanIfDisconnected(force: Boolean = false) {
         if (isBleConnected || isScanning) return
 
-        // Anti-Spam: Scanne maximal einmal alle 10 Sekunden automatisch (reduziert von 30s)
+        // Anti-Spam: Scanne maximal einmal alle 10 Sekunden automatisch, außer es ist erzwungen
         val now = System.currentTimeMillis()
-        if (now - lastScanTimestamp < 10000L) {
+        if (!force && (now - lastScanTimestamp < 10000L)) {
             return
         }
 
@@ -335,6 +403,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
         tvFirmwareVersion.text = "Firmware: Wird geladen..."
         containerFirmware.addView(tvFirmwareVersion, 2)
 
+        btnClearCache = Button(this)
+        btnClearCache.text = "Cache leeren"
+        btnClearCache.setOnClickListener { clearFirmwareCache() }
+        containerFirmware.addView(btnClearCache, 3)
+
         btnTabDevices.setOnClickListener { switchTab(0) }
         btnTabLog.setOnClickListener { switchTab(1) }
         btnTabRoute.setOnClickListener { switchTab(2) }
@@ -375,6 +448,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         tvLogContent.setOnLongClickListener {
             File(filesDir, LOG_FILE).delete()
             tvLogContent.text = "Log gelöscht."
+            lastLogContent = "" // Reset für Auto-Scroll
             performTtsHardReset()
             true
         }
@@ -482,7 +556,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
         val scanner = adapter.bluetoothLeScanner
         val filter = ScanFilter.Builder().setServiceUuid(ParcelUuid(SERVICE_UUID)).build()
-        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        // Akku-Optimierung: BALANCED statt LOW_LATENCY
+        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build()
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
             scanner?.startScan(listOf(filter), settings, bleScanCallback)
@@ -490,8 +565,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 stopScanning()
                 if (!isBleConnected && foundDevices.isNotEmpty()) {
                     val target = lastConnectedDeviceAddress
-                    val autoTarget = if (target != null) foundDevices.find { it.address == target } else if (foundDevices.size == 1) foundDevices[0] else null
-                    autoTarget?.let { connectToDevice(it.address) }
+                    val autoTarget = if (target != null) foundDevices[target] else foundDevices.values.firstOrNull()
+                    autoTarget?.let { connectToDevice(it.device.address) }
                 }
             }, 6000)
         }
@@ -508,13 +583,18 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private val bleScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val device = result.device
-            if (foundDevices.none { it.address == device.address }) {
-                foundDevices.add(device)
-                runOnUiThread { updateDeviceListView() }
-                if (device.address == lastConnectedDeviceAddress && !isBleConnected) {
-                    stopScanning()
-                    connectToDevice(device.address)
-                }
+            val name = device.name ?: ""
+            
+            // Filter: Nur Geräte zulassen, die mit "BikeNav" beginnen
+            if (!name.startsWith("BikeNav")) return
+
+            foundDevices[device.address] = result
+            
+            runOnUiThread { updateDeviceListView() }
+            
+            if (device.address == lastConnectedDeviceAddress && !isBleConnected) {
+                stopScanning()
+                connectToDevice(device.address)
             }
         }
     }
@@ -561,16 +641,34 @@ class MainActivity : AppCompatActivity(), LocationListener {
                     val cccUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
                     val descriptor = writeCharacteristic?.getDescriptor(cccUuid)
                     if (descriptor != null) {
-                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                        gatt.writeDescriptor(descriptor)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                            @Suppress("DEPRECATION")
+                            gatt.writeDescriptor(descriptor)
+                        }
                     }
                 }
                 
                 updateLog("System: HUD bereit")
+                // Sofortiger Heartbeat nach Verbindungsaufbau
+                sendMessageToBle("STT:ALIVE", force = true)
+                
+                // Falls eine Nachricht gepuffert war, jetzt senden (mit kleiner Verzögerung für BLE-Stack)
+                pendingMessage?.let { msg ->
+                    handler.postDelayed({
+                        updateLog(msg, restartGps = true, force = true)
+                    }, 200)
+                    pendingMessage = null
+                }
+                
                 runOnUiThread { startGpsUpdates(); updateDeviceListView() }
             }
         }
 
+        @Suppress("DEPRECATION")
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.d(TAG, "OTA: Descriptor erfolgreich geschrieben (Notifications aktiv)")
@@ -606,38 +704,24 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 runOnUiThread {
                     tvFirmwareVersion.text = "Firmware: $fwVersion"
                     updateLog("System: Firmware erkannt: $fwVersion")
+                    // Liste aktualisieren, damit das Häkchen erscheint
+                    updateFirmwareListView()
                 }
             }
         }
     }
 
-    fun updateLog(message: String, restartGps: Boolean = false) {
+    fun updateLog(message: String, restartGps: Boolean = false, force: Boolean = false) {
         if (restartGps) {
             lastActivityTime = System.currentTimeMillis()
             if (!isGpsActive) startGpsUpdates()
         }
 
-        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        val logEntry = "[$time] $message\n"
+        // 1. Zuerst BLE-Senden (Priorität!)
+        sendMessageToBle(message, force = force)
 
-        Thread {
-            try {
-                val file = File(filesDir, LOG_FILE)
-                val fos = FileOutputStream(file, true)
-                fos.write(logEntry.toByteArray())
-                fos.close()
-            } catch (e: Exception) { Log.e(TAG, "Log-Write Error: ${e.message}") }
-        }.start()
-
-        runOnUiThread {
-            tvLogContent.append(logEntry)
-            if (tvLogContent.lineCount > 100) {
-                val txt = tvLogContent.text; val idx = txt.indexOf("\n")
-                if (idx != -1) tvLogContent.text = txt.subSequence(idx + 1, txt.length)
-            }
-            if (containerLog.visibility == View.VISIBLE) logScrollView.post { logScrollView.fullScroll(View.FOCUS_DOWN) }
-        }
-        sendMessageToBle(message)
+        // 2. Dann Logging
+        AppLogger.log(TAG, message)
     }
 
     override fun onLocationChanged(l: Location) {
@@ -699,9 +783,10 @@ class MainActivity : AppCompatActivity(), LocationListener {
         if (checkPermissions()) {
             locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
             try {
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000L, 10.0f, this)
+                // Optimierung: Intervall auf 10s, Distanz auf 20m
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000L, 20.0f, this)
                 isGpsActive = true
-                updateLog("System: Eco-GPS aktiv (5s/10m)", restartGps = false)
+                updateLog("System: Eco-GPS aktiv (10s/20m)", restartGps = false)
             } catch (e: Exception) {
                 updateLog("Fehler: GPS Start", restartGps = false)
             }
@@ -783,28 +868,73 @@ class MainActivity : AppCompatActivity(), LocationListener {
     }
 
     private fun updateDeviceListView() {
-        val names = foundDevices.map { "${it.name ?: "HUD"}\n${it.address}" }
-        deviceListView.adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val v = super.getView(position, convertView, parent) as TextView
-                val conn = isBleConnected && bluetoothGatt?.device?.address == foundDevices[position].address
-                v.setTextColor(Color.WHITE); v.setBackgroundColor(if (conn) Color.parseColor("#2E7D32") else Color.TRANSPARENT)
-                return v
+        val results = foundDevices.values.toList()
+        
+        if (deviceListView.adapter is DeviceAdapter) {
+            (deviceListView.adapter as DeviceAdapter).updateData(results)
+        } else {
+            deviceListView.adapter = DeviceAdapter(this, results) { address ->
+                isBleConnected && bluetoothGatt?.device?.address == address
             }
         }
-        deviceListView.setOnItemClickListener { _, _, i, _ -> stopScanning(); connectToDevice(foundDevices[i].address) }
+        
+        deviceListView.setOnItemClickListener { _, _, i, _ -> 
+            stopScanning(); connectToDevice(results[i].device.address) 
+        }
     }
 
-    private fun sendMessageToBle(message: String) {
+    private class DeviceAdapter(
+        private val context: Context,
+        private var devices: List<ScanResult>,
+        private val isConnected: (String) -> Boolean
+    ) : BaseAdapter() {
+        fun updateData(newDevices: List<ScanResult>) {
+            devices = newDevices
+            notifyDataSetChanged()
+        }
+        override fun getCount() = devices.size
+        override fun getItem(position: Int) = devices[position]
+        override fun getItemId(position: Int) = position.toLong()
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val v = (convertView as? TextView) ?: TextView(context).apply {
+                setPadding(16, 16, 16, 16)
+                textSize = 16f
+            }
+            val result = devices[position]
+            val device = result.device
+            val conn = isConnected(device.address)
+            
+            v.text = "${device.name ?: "HUD"}\n${device.address} (${result.rssi} dBm)"
+            v.setTextColor(Color.WHITE)
+            v.setBackgroundColor(if (conn) Color.parseColor("#2E7D32") else Color.TRANSPARENT)
+            return v
+        }
+    }
+
+    private fun sendMessageToBle(message: String, force: Boolean = false) {
         val char = writeCharacteristic ?: return
-        if (!isBleConnected || isWritingBle) return
+        if (!isBleConnected || (isWritingBle && !force)) return
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) return
-        isWritingBle = true
+        
+        if (!force) isWritingBle = true
+        
         val payload = if (message.endsWith("\n")) message else "$message\n"
-        char.value = payload.toByteArray(Charsets.UTF_8)
-        char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-        bluetoothGatt?.writeCharacteristic(char)
-        handler.postDelayed({ isWritingBle = false }, 50)
+        val bytes = payload.toByteArray(Charsets.UTF_8)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            bluetoothGatt?.writeCharacteristic(char, bytes, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+        } else {
+            @Suppress("DEPRECATION")
+            char.value = bytes
+            @Suppress("DEPRECATION")
+            char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+            @Suppress("DEPRECATION")
+            bluetoothGatt?.writeCharacteristic(char)
+        }
+        
+        if (!force) {
+            handler.postDelayed({ isWritingBle = false }, 50)
+        }
     }
 
     private fun fetchFirmwareReleases() {
@@ -885,34 +1015,38 @@ class MainActivity : AppCompatActivity(), LocationListener {
         
         firmwareListView.adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, names) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                // Wir casten auf TextView, da simple_list_item_single_choice eine CheckedTextView ist (erbt von TextView)
                 val view = super.getView(position, convertView, parent) as TextView
                 val tagName = getItem(position) ?: ""
                 val file = File(filesDir, "firmware_$tagName.bin")
                 
-                // Aktuell laufende Version aus dem TextView extrahieren
                 val currentRunningVersion = tvFirmwareVersion.text.toString().replace("Firmware: ", "").trim()
+                val isInstalled = (tagName == currentRunningVersion && currentRunningVersion != "Wird geladen...")
+                val isCached = file.exists()
 
-                // Logik:
-                // 1. Wenn es die aktuell laufende Version ist -> Hellblau + Text "(installiert)"
-                // 2. Wenn es nur gecacht ist -> Dunkelgrün
-                // 3. Sonst -> Transparent
-                if (tagName == currentRunningVersion && currentRunningVersion != "Wird geladen...") {
-                    view.text = "$tagName (installiert)"
+                val icon = when {
+                    isInstalled -> "✅"
+                    isCached -> "📱"
+                    else -> "🌐"
+                }
+
+                view.text = "$icon $tagName"
+                
+                // Hintergrund-Logik beibehalten
+                if (isInstalled) {
                     view.setBackgroundColor(Color.parseColor("#ADD8E6")) // Hellblau
+                } else if (isCached) {
+                    view.setBackgroundColor(Color.parseColor("#2E7D32")) // Dunkelgrün
                 } else {
-                    view.text = tagName // Text zurücksetzen, falls View recycelt wurde
-                    if (file.exists()) {
-                        view.setBackgroundColor(Color.parseColor("#2E7D32")) // Dunkelgrün
-                    } else {
-                        view.setBackgroundColor(Color.TRANSPARENT)
-                    }
+                    view.setBackgroundColor(Color.TRANSPARENT)
                 }
                 return view
             }
         }
         
         firmwareListView.choiceMode = ListView.CHOICE_MODE_SINGLE
+        // Auswahl zurücksetzen, da sich der Cache-Status geändert hat
+        firmwareListView.clearChoices() 
+        
         firmwareListView.setOnItemClickListener { _, _, position, _ ->
             selectedFirmware = firmwareReleases[position]
             val tagName = selectedFirmware!!.first
@@ -958,16 +1092,30 @@ class MainActivity : AppCompatActivity(), LocationListener {
                     val cccUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
                     val descriptor = char.getDescriptor(cccUuid)
                     if (descriptor != null) {
-                        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                        gatt.writeDescriptor(descriptor)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                            @Suppress("DEPRECATION")
+                            gatt.writeDescriptor(descriptor)
+                        }
                         Thread.sleep(1000) 
                     }
                 }
 
                 // 2. START senden
-                char.value = "START:$OTA_SECRET_KEY".toByteArray()
-                char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-                gatt.writeCharacteristic(char)
+                val startBytes = "START:$OTA_SECRET_KEY".toByteArray()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    gatt.writeCharacteristic(char, startBytes, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    char.value = startBytes
+                    @Suppress("DEPRECATION")
+                    char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                    @Suppress("DEPRECATION")
+                    gatt.writeCharacteristic(char)
+                }
 
                 // 3. Warten auf Antwort (max 5s)
                 if (!otaLatch!!.await(5, java.util.concurrent.TimeUnit.SECONDS)) {
@@ -983,16 +1131,29 @@ class MainActivity : AppCompatActivity(), LocationListener {
                     val end = minOf(offset + chunkSize, bytes.size)
                     val chunk = bytes.copyOfRange(offset, end)
                     
-                    char.value = chunk
-                    gatt.writeCharacteristic(char)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        gatt.writeCharacteristic(char, chunk, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        char.value = chunk
+                        @Suppress("DEPRECATION")
+                        gatt.writeCharacteristic(char)
+                    }
                     
                     offset += chunkSize
                     Thread.sleep(30) 
                 }
 
                 // 5. END senden
-                char.value = "END".toByteArray()
-                gatt.writeCharacteristic(char)
+                val endBytes = "END".toByteArray()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    gatt.writeCharacteristic(char, endBytes, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    char.value = endBytes
+                    @Suppress("DEPRECATION")
+                    gatt.writeCharacteristic(char)
+                }
                 
                 runOnUiThread {
                     updateLog("System: OTA Übertragung abgeschlossen")
@@ -1020,6 +1181,27 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 }
             }
         }.start()
+    }
+
+    private fun clearFirmwareCache() {
+        val files = filesDir.listFiles { _, name -> name.startsWith("firmware_") && name.endsWith(".bin") }
+        var deletedCount = 0
+        files?.forEach { 
+            if (it.delete()) deletedCount++ 
+        }
+        updateLog("System: Cache gelöscht ($deletedCount Dateien)")
+        
+        // UI aktualisieren
+        updateFirmwareListView()
+        
+        // WICHTIG: ListView explizit invalidieren, falls das Adapter-Setzen nicht reicht
+        firmwareListView.invalidateViews()
+        
+        // Button-Status zurücksetzen
+        btnDownloadFirmware.text = "Firmware herunterladen"
+        btnDownloadFirmware.setOnClickListener { downloadFirmware() }
+        selectedFirmware = null
+        updateFirmwareButtonState()
     }
 
     private fun downloadFirmware() {
@@ -1114,28 +1296,24 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private fun loadPersistedData() { loadLogFromFile(); displayStoredRoute(); loadRouteIntoMemory() }
 
     private fun loadLogFromFile() {
-        Thread {
-            try {
-                val f = File(filesDir, LOG_FILE)
-                if (f.exists()) {
-                    val content = f.readLines().takeLast(200).joinToString("\n")
-                    runOnUiThread { tvLogContent.text = content }
-                }
-            } catch (e: Exception) { Log.e(TAG, "Read Log Error: ${e.message}") }
-        }.start()
+        val logs = AppLogger.getLogs()
+        val content = logs.takeLast(200).joinToString("\n")
+        runOnUiThread { tvLogContent.text = content }
     }
 
     override fun onResume() {
         super.onResume()
         instance = this
         if (tts == null) performTtsHardReset()
-        triggerScanIfDisconnected()
+        // Force=true, damit beim Öffnen der App sofort gescannt wird
+        triggerScanIfDisconnected(force = true)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         instance = null
         handler.removeCallbacks(reconnectRunnable) // Cleanup
+        handler.removeCallbacks(logUpdateRunnable) // Cleanup
         tts?.stop(); tts?.shutdown()
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) bluetoothGatt?.close()
     }

@@ -30,6 +30,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
@@ -39,6 +40,10 @@ import androidx.core.app.NotificationCompat
  * Verhindert Textverdopplung, wenn der Titel im Hauptinhalt erneut beginnt.
  */
 class NotificationService : NotificationListenerService() {
+
+    companion object {
+        var instance: NotificationService? = null
+    }
 
     private var lastMessage = ""
     private val CHANNEL_ID = "BikeNav_Foreground_Channel"
@@ -55,6 +60,7 @@ class NotificationService : NotificationListenerService() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         AppLogger.init(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = getSystemService(NotificationManager::class.java)
@@ -96,11 +102,11 @@ class NotificationService : NotificationListenerService() {
             val bigText = extras.getCharSequence("android.bigText")?.toString() ?: ""
 
             // --- DEBUG LOG START: Felder gefiltert anzeigen ---
-            AppLogger.log("BikeNav_Debug", "--------------------------------------")
-            AppLogger.log("BikeNav_Debug", ">>> APP: ${sbn.packageName}")
-            AppLogger.log("BikeNav_Debug", ">>> TITLE: $title")
-            AppLogger.log("BikeNav_Debug", ">>> TEXT: ${text.replace("\n", "[\\n]")}")
-            AppLogger.log("BikeNav_Debug", ">>> BIGTEXT: ${bigText.replace("\n", "[\\n]")}")
+            Log.d("BikeNav_Debug", "--------------------------------------")
+            Log.d("BikeNav_Debug", ">>> APP: ${sbn.packageName}")
+            Log.d("BikeNav_Debug", ">>> TITLE: $title")
+            Log.d("BikeNav_Debug", ">>> TEXT: ${text.replace("\n", "[\\n]")}")
+            Log.d("BikeNav_Debug", ">>> BIGTEXT: ${bigText.replace("\n", "[\\n]")}")
             // --- DEBUG LOG END ---
 
             // Inhalts-Priorisierung
@@ -131,7 +137,6 @@ class NotificationService : NotificationListenerService() {
                 // Doubletten-Schutz & Senden
                 if (fullMsg != lastMessage) {
                     lastMessage = fullMsg
-                    AppLogger.log("BikeNav_Service", ">>> RX-NOTIFY: $fullMsg")
                     sendToMainDirect(fullMsg)
                 }
             }
@@ -168,8 +173,19 @@ class NotificationService : NotificationListenerService() {
     }
 
     override fun onDestroy() {
+        instance = null
         handler.removeCallbacks(timeoutRunnable)
         super.onDestroy()
+    }
+
+    fun isAnyNavAppActive(): Boolean {
+        val activeNotifications = activeNotifications ?: return false
+        val navPackages = listOf(
+            "com.google.android.apps.maps", "de.komoot.android", "net.osmand", 
+            "net.osmand.plus", "org.kurviger.android", "com.strava", 
+            "com.mapfactor.navigator", "com.sygic.aura", "app.organicmaps"
+        )
+        return activeNotifications.any { sbn -> navPackages.contains(sbn.packageName) }
     }
 
     override fun onListenerConnected() {

@@ -70,3 +70,34 @@
 - [x] Docs: Bluetooth-Protokoll-Dokumentation um GET_HW, GET_FW und OTA-Protokoll erweitert
 - [x] Docs: Bluetooth-Protokoll-Dokumentation um OTA-Service-UUIDs ergänzt
 - [x] Docs: BLUEPRINT.md auf aktuellen Stand (OTA, Firmware-Tab, Protokolle) gebracht
+- [x] Feature: Heartbeat-Mechanismus (STT:ALIVE) zur Verhinderung von ESP32-Sleep implementiert
+- [x] Optimierung: Dynamisches Heartbeat-Intervall (10s bei Aktivität, 30s bei Inaktivität)
+- [x] Optimierung: Sofortiger Heartbeat direkt nach Verbindungsaufbau (onServicesDiscovered)
+- [x] Feature: Puffer für Navigationsmeldungen bei Verbindungsaufbau (verhindert Datenverlust)
+- [x] Fix: Puffer-Nachrichten werden jetzt mit `force=true` gesendet (Race Condition behoben)
+- [x] Fix: Verzögerung (200ms) beim Senden der Puffer-Nachricht eingefügt (Race Condition im BLE-Stack behoben)
+- [x] Docs: Bluetooth-Protokoll-Dokumentation bilingual (DE/EN) strukturiert
+- [x] Refactor: MainActivity auf AppLogger umgestellt (Performance-Fix)
+- [x] Fix: Priorisierung von BLE-Nachrichten in updateLog (Entkopplung vom Logging)
+- [x] Feature: UI-Drosselung für Log-Anzeige (Throttling auf 500ms)
+- [x] Feature: ACK-Meldungen aus Log-Anzeige gefiltert und durch visuellen Effekt (Grün-Flash) ersetzt
+- [x] Fix: Doppeltes Logging durch Umstellung auf Log.d für Debug-Infos und Bereinigung von AppLogger
+- [x] Fix: Doppeltes Logging im NotificationService entfernt
+- [x] Feature: BLE-Scan-Filter auf "BikeNav*" Namensteil eingeschränkt
+- [x] Feature: RSSI-Anzeige (dBm) in der Geräteliste hinzugefügt
+- [x] Fix: RSSI-Aktualisierung in der Geräteliste (UI-Refresh)
+- [x] Feature: Button zum Löschen des Firmware-Caches hinzugefügt
+- [x] Fix: Cache-Lösch-Logik und UI-Refresh (Invalidierung der ListView)
+- [x] Fix: Deprecated BluetoothGatt-Methoden durch API 33+ konforme Implementierung ersetzt
+- [x] Fix: Deprecated BluetoothGattDescriptor-Methoden durch API 33+ konforme Implementierung ersetzt
+- [x] Feature: Firmware-Icons (Disk, WWW, Checkmark) in der Firmware-Liste implementieren (Fix: Refresh bei FW-Empfang)
+- [x] UI-Anpassung: Disketten-Icon durch Handy-Icon für lokalen Cache ersetzt
+- [x] Feature: "DISCONNECT"-Befehl an ESP32 beim App-Beenden entfernt (unzuverlässig, ESP32 sollte onDisconnect-Event nutzen)
+- [x] Optimierung: Heartbeat-Intervall auf 10 Sekunden verkürzt
+- [x] Fix: Log-Auto-Scroll nur bei neuen Einträgen (verhindert ungewolltes Zurückspringen beim Lesen)
+- [x] Optimierung: Akkuverbrauch durch BLE-Scan-Modus (BALANCED) und längere Reconnect-Intervalle (60s) gesenkt
+- [x] Optimierung: GPS-Intervall auf 10s und Distanz-Filter auf 20m erhöht (Stromsparmodus)
+- [x] Optimierung: Log-Update-Frequenz auf 2 Sekunden erhöht (CPU-Entlastung)
+- [x] Optimierung: Intelligentes Power-Management (Heartbeat & GPS-Standby nur bei System-Aktivität)
+- [x] Optimierung: Automatischer Reconnect-Scan nur bei aktiver System-Nutzung
+- [x] Fix: Scan-Cooldown für erzwungene Reconnects (via NotificationService/Resume) entfernt
