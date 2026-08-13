@@ -119,6 +119,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private lateinit var btnClearCache: Button
     private lateinit var tvHardwareVersion: TextView
     private lateinit var tvFirmwareVersion: TextView
+    private lateinit var firmwareProgressBar: ProgressBar
 
     private lateinit var etManualCommand: EditText
     private lateinit var btnSendMessage: Button
@@ -129,6 +130,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private var bluetoothGatt: BluetoothGatt? = null
     private var writeCharacteristic: BluetoothGattCharacteristic? = null
     var isBleConnected = false // Jetzt intern lesbar für Companion
+    private var isMtuReady = false
+    private var negotiatedMtu = 23 // Standard-BLE-MTU
     private var lastConnectedDeviceAddress: String? = null
     
     // Map statt Liste, um RSSI zu speichern
@@ -146,6 +149,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private val OTA_CHAR_UUID = UUID.fromString("1D14D6EF-FD63-4FA1-BFA4-8F47B42119F0")
     private val OTA_SECRET_KEY = "BIKE_HUD_OTA_2026"
     private var otaLatch: java.util.concurrent.CountDownLatch? = null
+    private var writeLatch: java.util.concurrent.CountDownLatch? = null
 
     // GPS & Logik
     private lateinit var locationManager: LocationManager
@@ -168,6 +172,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private var isWritingBle = false
     private var lastLogContent = "" // Tracking für Auto-Scroll
     private var pendingMessage: String? = null // Puffer für Nachrichten
+    private var mtuTimeoutRunnable: Runnable? = null
 
     // Firmware Variablen
     private var firmwareReleases = mutableListOf<Pair<String, String>>() // Pair(Tag, DownloadUrl)
@@ -408,6 +413,13 @@ class MainActivity : AppCompatActivity(), LocationListener {
         btnClearCache.setOnClickListener { clearFirmwareCache() }
         containerFirmware.addView(btnClearCache, 3)
 
+        firmwareProgressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            visibility = View.GONE
+            // Hellgrüne Farbe setzen
+            progressDrawable.setColorFilter(android.graphics.Color.parseColor("#90EE90"), android.graphics.PorterDuff.Mode.SRC_IN)
+        }
+        containerFirmware.addView(firmwareProgressBar, 4)
+
         btnTabDevices.setOnClickListener { switchTab(0) }
         btnTabLog.setOnClickListener { switchTab(1) }
         btnTabRoute.setOnClickListener { switchTab(2) }
@@ -634,8 +646,19 @@ class MainActivity : AppCompatActivity(), LocationListener {
             if (writeCharacteristic != null) {
                 // 1. MTU anfordern
                 if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-                    gatt.requestMtu(517)
+                    logToUi("System: Sende MTU-Request...")
+                    isMtuReady = false
+                    val success = gatt.requestMtu(517)
+                    logToUi("System: Request gesendet, Erfolg: $success")
                     
+                    mtuTimeoutRunnable = Runnable {
+                        if (!isMtuReady) {
+                            updateLog("Warnung: MTU-Request Timeout! Nutze Standard-MTU.")
+                            isMtuReady = true
+                        }
+                    }
+                    handler.postDelayed(mtuTimeoutRunnable!!, 5000)
+                
                     // 2. WICHTIG: Notifications für UART-Antworten aktivieren
                     gatt.setCharacteristicNotification(writeCharacteristic, true)
                     val cccUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -675,6 +698,29 @@ class MainActivity : AppCompatActivity(), LocationListener {
             }
         }
 
+        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+            Log.d(TAG, "OTA: onCharacteristicWrite UUID: ${characteristic.uuid}, Status: $status")
+            
+            if (characteristic.uuid == OTA_CHAR_UUID) {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    Log.e(TAG, "OTA: Schreibfehler! Status: $status")
+                }
+                writeLatch?.countDown()
+            }
+        }
+
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            mtuTimeoutRunnable?.let { handler.removeCallbacks(it) }
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                negotiatedMtu = mtu
+                AppLogger.log(TAG, "System: MTU erfolgreich auf $mtu ausgehandelt")
+                isMtuReady = true
+            } else {
+                AppLogger.log(TAG, "Fehler: MTU Änderung fehlgeschlagen ($status)")
+                isMtuReady = true
+            }
+        }
+
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             // 1. Rohdaten als String lesen
             val value = characteristic.value
@@ -689,6 +735,29 @@ class MainActivity : AppCompatActivity(), LocationListener {
             if (response.contains("READY", ignoreCase = true)) {
                 Log.d(TAG, "OTA-DEBUG: READY erkannt!")
                 otaLatch?.countDown()
+            }
+
+            // NEU: Rückmeldung vom ESP32 verarbeiten
+            if (response.contains("OTA_SUCCESS", ignoreCase = true)) {
+                Log.d(TAG, "OTA-DEBUG: Update erfolgreich bestätigt!")
+                updateLog("System: ESP32 bestätigt erfolgreiches Update!")
+                runOnUiThread {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("OTA Erfolg")
+                        .setMessage("Firmware wurde erfolgreich auf dem ESP32 installiert.")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            } else if (response.contains("OTA_FAIL", ignoreCase = true)) {
+                Log.d(TAG, "OTA-DEBUG: Update fehlgeschlagen!")
+                updateLog("System: ESP32 meldet Fehler beim Update!")
+                runOnUiThread {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("OTA Fehler")
+                        .setMessage("Der ESP32 meldet einen Fehler bei der Installation.")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
             }
 
             if (response.startsWith("HW:")) {
@@ -721,6 +790,10 @@ class MainActivity : AppCompatActivity(), LocationListener {
         sendMessageToBle(message, force = force)
 
         // 2. Dann Logging
+        AppLogger.log(TAG, message)
+    }
+
+    fun logToUi(message: String) {
         AppLogger.log(TAG, message)
     }
 
@@ -1013,9 +1086,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private fun updateFirmwareListView() {
         val names = firmwareReleases.map { it.first }
         
-        firmwareListView.adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, names) {
+        firmwareListView.adapter = object : ArrayAdapter<String>(this, 0, names) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getView(position, convertView, parent) as TextView
                 val tagName = getItem(position) ?: ""
                 val file = File(filesDir, "firmware_$tagName.bin")
                 
@@ -1023,32 +1095,61 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 val isInstalled = (tagName == currentRunningVersion && currentRunningVersion != "Wird geladen...")
                 val isCached = file.exists()
 
-                val icon = when {
-                    isInstalled -> "✅"
-                    isCached -> "📱"
-                    else -> "🌐"
+                // Layout erstellen
+                val layout = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(16, 16, 16, 16)
                 }
 
-                view.text = "$icon $tagName"
-                
-                // Hintergrund-Logik beibehalten
-                if (isInstalled) {
-                    view.setBackgroundColor(Color.parseColor("#ADD8E6")) // Hellblau
-                } else if (isCached) {
-                    view.setBackgroundColor(Color.parseColor("#2E7D32")) // Dunkelgrün
-                } else {
-                    view.setBackgroundColor(Color.TRANSPARENT)
+                // Hilfsfunktion für Icons mit fester Breite (z.B. 80px)
+                fun addIcon(text: String) {
+                    layout.addView(TextView(context).apply {
+                        this.text = text
+                        this.layoutParams = LinearLayout.LayoutParams(80, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    })
                 }
-                return view
+
+                addIcon("🌐")
+                addIcon(if (isCached) "📱" else "  ")
+                addIcon(if (isInstalled) "✅" else "  ")
+
+                // Text View für den Namen
+                layout.addView(TextView(context).apply {
+                    this.text = tagName
+                    this.typeface = android.graphics.Typeface.MONOSPACE
+                    this.setTextColor(Color.WHITE)
+                })
+
+                // Hintergrund- und Rahmen-Logik
+                val isSelected = (tagName == selectedFirmware?.first)
+                val background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    
+                    // Hintergrundfarbe basierend auf Status
+                    if (isInstalled) setColor(Color.parseColor("#ADD8E6"))
+                    else if (isCached) setColor(Color.parseColor("#2E7D32"))
+                    else setColor(Color.TRANSPARENT)
+
+                    // Gelber Rahmen bei Auswahl
+                    if (isSelected) {
+                        setStroke(6, Color.YELLOW)
+                    }
+                }
+                layout.background = background
+                
+                return layout
             }
         }
         
         firmwareListView.choiceMode = ListView.CHOICE_MODE_SINGLE
-        // Auswahl zurücksetzen, da sich der Cache-Status geändert hat
         firmwareListView.clearChoices() 
         
         firmwareListView.setOnItemClickListener { _, _, position, _ ->
             selectedFirmware = firmwareReleases[position]
+            
+            // WICHTIG: Adapter benachrichtigen, damit die Auswahl (der gelbe Rahmen) gezeichnet wird
+            (firmwareListView.adapter as ArrayAdapter<*>).notifyDataSetChanged()
+
             val tagName = selectedFirmware!!.first
             val file = File(filesDir, "firmware_$tagName.bin")
             
@@ -1080,10 +1181,13 @@ class MainActivity : AppCompatActivity(), LocationListener {
             btnDownloadFirmware.text = "Flashe..."
         }
 
+        // WICHTIG: Latches vor dem Start explizit zurücksetzen
+        otaLatch = java.util.concurrent.CountDownLatch(1)
+        writeLatch = null
+
         Thread {
             try {
                 updateLog("System: Starte OTA...")
-                otaLatch = java.util.concurrent.CountDownLatch(1)
                 
                 // 1. Notification lokal aktivieren
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
@@ -1123,36 +1227,108 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 }
 
                 // 4. Daten senden
+                // WICHTIG: Datei neu einlesen, um sicherzugehen, dass wir den aktuellen Stand haben
                 val bytes = file.readBytes()
-                val chunkSize = 514 
+                updateLog("System: Datei geladen, Größe: ${bytes.size} Bytes")
+                
+                // WICHTIG: Wenn die Datei kleiner als erwartet ist, nicht flashen!
+                // Wir können hier nicht die exakte Größe wissen, aber wir können sicherstellen, 
+                // dass wir nicht bei 0 Bytes starten.
+                if (bytes.isEmpty()) {
+                    throw Exception("Fehler: Firmware-Datei ist leer!")
+                }
+                
+                // Feste Chunk-Größe von 256 Bytes für OTA
+                val chunkSize = 256
                 var offset = 0
+                
+                runOnUiThread { 
+                    firmwareProgressBar.visibility = View.VISIBLE
+                    firmwareProgressBar.progress = 0
+                }
                 
                 while (offset < bytes.size) {
                     val end = minOf(offset + chunkSize, bytes.size)
                     val chunk = bytes.copyOfRange(offset, end)
                     
+                    var success = false
+                    var retries = 0
+                    
+                    // Retry-Logik: Wenn der Stack voll ist, kurz warten und erneut versuchen
+                    while (!success && retries < 3) {
+                        success = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            gatt.writeCharacteristic(char, chunk, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == BluetoothGatt.GATT_SUCCESS
+                        } else {
+                            @Suppress("DEPRECATION")
+                            char.value = chunk
+                            @Suppress("DEPRECATION")
+                            char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                            @Suppress("DEPRECATION")
+                            gatt.writeCharacteristic(char)
+                        }
+                        
+                        if (!success) {
+                            retries++
+                            Thread.sleep(100) // Kurze Pause bei Fehler
+                        }
+                    }
+                    
+                    if (!success) {
+                        throw Exception("Fehler: writeCharacteristic nach 3 Versuchen fehlgeschlagen bei Offset $offset")
+                    }
+                    
+                    // KORREKTUR: Offset auf die tatsächliche End-Position setzen
+                    offset = end
+                    
+                    // Fortschritt berechnen
+                    val progress = (offset.toFloat() / bytes.size * 100).toInt()
+                    runOnUiThread { firmwareProgressBar.progress = progress }
+                    
+                    // WICHTIG: Pacing via Thread.sleep, da wir keine ACKs bekommen
+                    Thread.sleep(100)
+                }
+                
+                runOnUiThread { firmwareProgressBar.visibility = View.GONE }
+
+                // EXPLIZITE PRÜFUNG: Wurden wirklich alle Bytes gesendet?
+                if (offset < bytes.size) {
+                    throw Exception("Übertragung unvollständig: Nur $offset von ${bytes.size} Bytes gesendet")
+                }
+
+                // WICHTIG: Sehr lange Pause vor dem END-Befehl, um sicherzugehen, dass alles im Flash ist
+                updateLog("System: Warte auf Flash-Schreibvorgang (Final)...")
+                Thread.sleep(8000)
+
+                // 5. END und REBOOT senden
+                val commands = listOf("END".toByteArray(), "reboot".toByteArray())
+                
+                for (cmd in commands) {
+                    val isReboot = String(cmd) == "reboot"
+                    writeLatch = java.util.concurrent.CountDownLatch(1)
+                    
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        gatt.writeCharacteristic(char, chunk, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+                        gatt.writeCharacteristic(char, cmd, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
                     } else {
                         @Suppress("DEPRECATION")
-                        char.value = chunk
+                        char.value = cmd
+                        @Suppress("DEPRECATION")
+                        char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
                         @Suppress("DEPRECATION")
                         gatt.writeCharacteristic(char)
                     }
                     
-                    offset += chunkSize
-                    Thread.sleep(30) 
-                }
-
-                // 5. END senden
-                val endBytes = "END".toByteArray()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    gatt.writeCharacteristic(char, endBytes, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
-                } else {
-                    @Suppress("DEPRECATION")
-                    char.value = endBytes
-                    @Suppress("DEPRECATION")
-                    gatt.writeCharacteristic(char)
+                    // Nur auf ACK warten, wenn es nicht der Reboot-Befehl ist
+                    if (!isReboot) {
+                        // Erhöhtes Timeout auf 15s, da der ESP32 bei der Checksummen-Prüfung beschäftigt ist
+                        if (writeLatch?.await(15, java.util.concurrent.TimeUnit.SECONDS) != true) {
+                            Log.w(TAG, "OTA: Timeout beim Warten auf ACK nach END-Befehl, fahre trotzdem fort.")
+                        }
+                        // WICHTIG: Nach dem END-Befehl braucht der ESP32 Zeit für die Checksummen-Prüfung
+                        Thread.sleep(2000)
+                    } else {
+                        // Beim Reboot-Befehl nicht auf ACK warten, da der ESP32 sofort neu startet
+                        Thread.sleep(500)
+                    }
                 }
                 
                 runOnUiThread {
@@ -1227,12 +1403,35 @@ class MainActivity : AppCompatActivity(), LocationListener {
                     
                     val buffer = ByteArray(4096)
                     var bytesRead: Int
+                    var totalBytesRead = 0
+                    val totalSize = connection.contentLength
+                    
+                    runOnUiThread { 
+                        firmwareProgressBar.visibility = View.VISIBLE
+                        firmwareProgressBar.progress = 0
+                    }
+
                     while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                         outputStream.write(buffer, 0, bytesRead)
+                        totalBytesRead += bytesRead
+                        if (totalSize > 0) {
+                            val progress = (totalBytesRead.toFloat() / totalSize * 100).toInt()
+                            runOnUiThread { firmwareProgressBar.progress = progress }
+                        }
                     }
                     
+                    outputStream.flush()
+                    outputStream.fd.sync() // WICHTIG: Erzwingt das Schreiben auf den Datenträger
                     outputStream.close()
                     inputStream.close()
+                    
+                    // WICHTIG: Prüfung, ob der Download vollständig war
+                    if (totalSize > 0 && totalBytesRead != totalSize) {
+                        file.delete() // Korrupte Datei löschen
+                        throw Exception("Download unvollständig: $totalBytesRead / $totalSize Bytes")
+                    }
+                    
+                    runOnUiThread { firmwareProgressBar.visibility = View.GONE }
                     
                     runOnUiThread { 
                         updateLog("System: Download fertig: $fileName")

@@ -101,3 +101,6 @@
 - [x] Optimierung: Intelligentes Power-Management (Heartbeat & GPS-Standby nur bei System-Aktivität)
 - [x] Optimierung: Automatischer Reconnect-Scan nur bei aktiver System-Nutzung
 - [x] Fix: Scan-Cooldown für erzwungene Reconnects (via NotificationService/Resume) entfernt
+- [x] Fix: MTU-Handling in BluetoothService (dynamische MTU-Größe)
+- [x] BluetoothService.kt entfernen (da ungenutzt)
+- [x] Refactor: Trennung von UI-Logging und BLE-Kommunikation (logToUi)
