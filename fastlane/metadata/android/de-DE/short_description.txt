@@ -1,0 +1,1 @@
+Sende TTS-Nachrichten via Bluetooth an serielle Geräte.

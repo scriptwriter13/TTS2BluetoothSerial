@@ -44,17 +44,9 @@ class MyBluetoothTtsService : TextToSpeechService() {
     private val TAG = ">>> [TTS-SERVICE]"
     private val CHANNEL_ID = "BikeNav_TTS_Channel"
     private val NOTIFICATION_ID = 102
-    private val TIMEOUT_DURATION = 2 * 60 * 1000L // 2 Minuten
 
     private val handler = Handler(Looper.getMainLooper())
     private var lastMessage: String? = null
-
-    private val timeoutRunnable = Runnable {
-        AppLogger.log(TAG, "Timeout erreicht: Sende STOP_BLE_CONNECTION")
-        val intent = Intent("ch.scriptwriter.tts2bluetoothserial.STOP_BLE_CONNECTION")
-        intent.setPackage(packageName)
-        sendBroadcast(intent)
-    }
 
     private val reconnectReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -126,12 +118,10 @@ class MyBluetoothTtsService : TextToSpeechService() {
 
     override fun onStop() {
         AppLogger.log(TAG, "onStop aufgerufen")
-        handler.removeCallbacks(timeoutRunnable)
     }
 
     override fun onDestroy() {
         AppLogger.log(TAG, "Service onDestroy aufgerufen.")
-        handler.removeCallbacks(timeoutRunnable)
         try {
             unregisterReceiver(reconnectReceiver)
         } catch (e: Exception) {
@@ -141,10 +131,6 @@ class MyBluetoothTtsService : TextToSpeechService() {
     }
 
     override fun onSynthesizeText(request: SynthesisRequest?, callback: SynthesisCallback?) {
-        // Timer zurücksetzen bei Aktivität
-        handler.removeCallbacks(timeoutRunnable)
-        handler.postDelayed(timeoutRunnable, TIMEOUT_DURATION)
-
         val text = request?.charSequenceText?.toString() ?: request?.text
 
         AppLogger.log(TAG, "onSynthesizeText getriggert. Text-Input: '$text'")

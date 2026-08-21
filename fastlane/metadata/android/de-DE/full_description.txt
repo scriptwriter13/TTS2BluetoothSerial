@@ -1,0 +1,1 @@
+TTS2BluetoothSerial ermöglicht es, Text-to-Speech (TTS) Nachrichten direkt von deinem Android-Gerät über Bluetooth an serielle Schnittstellen (z.B. ESP32, Arduino) zu senden. Ideal für Navigationsansagen oder Statusmeldungen in DIY-Projekten.

@@ -180,12 +180,13 @@ class NotificationService : NotificationListenerService() {
 
     fun isAnyNavAppActive(): Boolean {
         val activeNotifications = activeNotifications ?: return false
-        val navPackages = listOf(
-            "com.google.android.apps.maps", "de.komoot.android", "net.osmand", 
-            "net.osmand.plus", "org.kurviger.android", "com.strava", 
-            "com.mapfactor.navigator", "com.sygic.aura", "app.organicmaps"
-        )
-        return activeNotifications.any { sbn -> navPackages.contains(sbn.packageName) }
+        
+        // Wir laden die erlaubten Pakete aus den Preferences, um dynamisch zu sein
+        val preferences = getSharedPreferences("NaviSettings", Context.MODE_PRIVATE)
+        val allowedApps = preferences.getStringSet("allowed_packages", emptySet()) ?: emptySet()
+        
+        // Wenn eine der erlaubten Apps eine Notification hat, ist das System "aktiv"
+        return activeNotifications.any { sbn -> allowedApps.contains(sbn.packageName) }
     }
 
     override fun onListenerConnected() {

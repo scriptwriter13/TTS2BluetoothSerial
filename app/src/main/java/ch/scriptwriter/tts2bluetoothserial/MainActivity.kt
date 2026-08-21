@@ -182,13 +182,19 @@ class MainActivity : AppCompatActivity(), LocationListener {
     // GPS Inaktivitäts-Management
     private var lastActivityTime = System.currentTimeMillis()
     private var isGpsActive = false
+    private var isAppInForeground = false
     private val GPS_TIMEOUT = 120_000L // 2 Minuten
 
     private var tts: TextToSpeech? = null
 
     private fun isSystemActive(): Boolean {
-        val navActive = NotificationService.instance?.isAnyNavAppActive() ?: false
+        val navService = NotificationService.instance
+        val navActive = navService?.isAnyNavAppActive() ?: false
         val ttsActive = tts?.isSpeaking ?: false
+        
+        if (!navActive && !ttsActive) {
+            Log.d(TAG, "System inaktiv: NavActive=$navActive, TtsActive=$ttsActive, ServiceInstance=${navService != null}")
+        }
         return navActive || ttsActive
     }
 
@@ -206,24 +212,27 @@ class MainActivity : AppCompatActivity(), LocationListener {
     // Periodischer Reconnect-Check
     private val reconnectRunnable = object : Runnable {
         override fun run() {
-            // Nur automatisch scannen, wenn wir nicht verbunden sind UND das System aktiv ist
-            if (!isBleConnected && isSystemActive()) {
+            // Wenn wir nicht verbunden sind UND (System aktiv ODER App im Vordergrund)
+            if (!isBleConnected && (isSystemActive() || isAppInForeground)) {
+                Log.d(TAG, "Reconnect-Check: Starte Scan (System aktiv oder Foreground)")
                 triggerScanIfDisconnected()
             }
-            handler.postDelayed(this, 60000) // Alle 60 Sekunden prüfen
+            // Intervall auf 15 Sekunden verkürzt für schnellere Reaktion
+            handler.postDelayed(this, 15000) 
         }
     }
 
     private val heartbeatRunnable = object : Runnable {
         override fun run() {
             val active = isSystemActive()
-            if (isBleConnected && active) {
+            // Sende Heartbeat, wenn verbunden UND (System aktiv ODER App im Vordergrund)
+            if (isBleConnected && (active || isAppInForeground)) {
                 sendMessageToBle("STT:ALIVE")
-                Log.d(TAG, "Heartbeat gesendet (System aktiv)")
+                Log.d(TAG, "Heartbeat gesendet (Aktiv: $active, Foreground: $isAppInForeground)")
             }
             
             // Dynamisches Intervall: 10s bei Aktivität, 30s bei Inaktivität
-            val delay = if (active) 10000L else 30000L
+            val delay = if (active || isAppInForeground) 10000L else 30000L
             handler.postDelayed(this, delay)
         }
     }
@@ -605,6 +614,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
             runOnUiThread { updateDeviceListView() }
             
             if (device.address == lastConnectedDeviceAddress && !isBleConnected) {
+                Log.d(TAG, "Auto-Reconnect: Bekanntes Gerät gefunden: ${device.address}")
                 stopScanning()
                 connectToDevice(device.address)
             }
@@ -1502,10 +1512,16 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
     override fun onResume() {
         super.onResume()
+        isAppInForeground = true
         instance = this
         if (tts == null) performTtsHardReset()
         // Force=true, damit beim Öffnen der App sofort gescannt wird
         triggerScanIfDisconnected(force = true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        isAppInForeground = false
     }
 
     override fun onDestroy() {

@@ -104,3 +104,9 @@
 - [x] Fix: MTU-Handling in BluetoothService (dynamische MTU-Größe)
 - [x] BluetoothService.kt entfernen (da ungenutzt)
 - [x] Refactor: Trennung von UI-Logging und BLE-Kommunikation (logToUi)
+- [x] Verifizierung: Automatischer Reconnect bei bekanntem Gerät (MAC-Match)
+- [x] Refactor: Timeout-Logik aus MyBluetoothTtsService entfernt
+- [x] Feature: Dynamische Aktivitäts-Erkennung in NotificationService basierend auf NaviSettings
+- [x] Feature: Heartbeat-Senden auch bei App im Vordergrund (Foreground-Tracking)
+- [x] Fastlane für F-Droid einrichten
+- [x] F-Droid Metadaten-Struktur vorbereitet
