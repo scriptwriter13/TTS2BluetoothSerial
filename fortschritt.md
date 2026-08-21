@@ -110,3 +110,4 @@
 - [x] Feature: Heartbeat-Senden auch bei App im Vordergrund (Foreground-Tracking)
 - [x] Fastlane für F-Droid einrichten
 - [x] F-Droid Metadaten-Struktur vorbereitet
+- [x] F-Droid Metadaten (Titel, Beschreibungen) vollständig
