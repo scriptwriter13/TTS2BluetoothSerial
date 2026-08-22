@@ -7,6 +7,7 @@
 # Build Outputs
 build/
 /build
+build_output/
 bin/
 gen/
 .externalNativeBuild/
