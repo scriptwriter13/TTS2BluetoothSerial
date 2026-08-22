@@ -113,3 +113,4 @@
 - [x] F-Droid Metadaten (Titel, Beschreibungen) vollständig inkl. Zielgruppen-Hinweis, Funktionspräzisierung und Webflasher-Info
 - [x] Dokumentationsstruktur auf /docs umstellen und READMEs synchronisieren
 - [x] ARCHITEKTUR.md in /docs verschieben und Root-Datei löschen
+- [x] App-Name in Fastlane-Metadaten (DE) auf 'BikeNavi ESP32' aktualisiert
