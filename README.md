@@ -6,3 +6,4 @@ Dieses Projekt ist eine Android-Brücke, die Navigationsansagen (via TTS-Engine)
 Für detaillierte Informationen und technische Spezifikationen siehe:
 - [Deutsche Dokumentation](/docs/README.md)
 - [English Documentation](/docs/README_en.md)
+- [Projekt-Architektur](/docs/ARCHITEKTUR.md)

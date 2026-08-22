@@ -112,3 +112,4 @@
 - [x] F-Droid Metadaten-Struktur vorbereitet
 - [x] F-Droid Metadaten (Titel, Beschreibungen) vollständig inkl. Zielgruppen-Hinweis, Funktionspräzisierung und Webflasher-Info
 - [x] Dokumentationsstruktur auf /docs umstellen und READMEs synchronisieren
+- [x] ARCHITEKTUR.md in /docs verschieben und Root-Datei löschen
