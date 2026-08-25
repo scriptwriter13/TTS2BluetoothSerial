@@ -114,3 +114,4 @@
 - [x] Dokumentationsstruktur auf /docs umstellen und READMEs synchronisieren
 - [x] ARCHITEKTUR.md in /docs verschieben und Root-Datei löschen
 - [x] App-Name in Fastlane-Metadaten (DE) auf 'BikeNavi ESP32' aktualisiert
+- [x] Changelog für die letzten 10 Commits erstellt

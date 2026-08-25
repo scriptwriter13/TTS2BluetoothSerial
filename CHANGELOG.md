@@ -1,0 +1,1402 @@
+# Changelog
+
+
+
+## Änderungen der letzten Aktivitäten (Stand: 2026-08-25)
+
+### 🛠️ Sonstige Änderungen & Verbesserungen
+- chore: Changelog für die letzten 10 Commits erstellen
+- chore: App-Namen in Fastlane-Metadaten aktualisieren
+- chore: App-Namen in englischen Metadaten aktualisieren
+- chore: App-Namen in englischer Metadaten-Datei aktualisieren
+- images2
+- images
+
+
+## Änderungen der letzten 90 Tage (Stand: 2026-08-25)
+
+### 🚀 Neue Funktionen
+- Fastlane-Konfiguration für F-Droid hinzufügen
+- Sende Heartbeat auch bei App im Vordergrund
+- dynamische Aktivitäts-Erkennung für Navi-Apps implementieren
+- Log-Ausgabe für Auto-Reconnect hinzufügen
+- OTA-Rückmeldungen vom ESP32 verarbeiten und anzeigen
+- dynamische Chunk-Größe basierend auf MTU verwenden
+- logging und fehlerprüfung für ble-schreibvorgänge hinzufügen
+- Protokollierung beim Laden der Firmware-Datei hinzufügen
+- Fortschrittsbalken für Firmware-Download und -Flash hinzufügen
+- reboot-Befehl nach END-Signal senden
+- MTU-Timeout-Fallback in MainActivity implementieren
+- MTU-Request-Status in MainActivity protokollieren
+- Logging für MTU-Anfrage und -Bestätigung hinzufügen
+- writeCharacteristic und getMaxChunkSize in BluetoothService hinzufügen
+- MTU-Aushandlung in BluetoothService implementieren
+- gelben Rahmen für ausgewählte Firmware-Elemente hinzufügen
+- icons in der liste für status-übersicht anpassen
+- Push nach master im Deploy-Skript hinzufügen
+- lokalen Commit vor Deployment ermöglichen
+- GitHub-Release via gh CLI automatisieren
+- interaktive Versions- und Tagging-Logik implementieren
+- Puffer für Navigationsmeldungen bei Verbindungsaufbau implementieren
+- sofortigen Heartbeat nach Verbindungsaufbau senden
+- dynamisches Heartbeat-Intervall implementieren
+- DISCONNECT-Befehl an ESP32 beim App-Beenden senden
+- Firmware-Status-Icons in der Liste anzeigen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- RSSI-Anzeige und dynamische Aktualisierung der Geräteliste
+- BLE-Scan-Filter auf "BikeNav"-Gerätenamen einschränken
+- ACK-Logs filtern und durch visuellen Flash-Effekt ersetzen
+- UI-Drosselung für Log-Anzeige implementieren
+- Heartbeat-Mechanismus zur Verhinderung von ESP32-Sleep hinzufügen
+- Text für Firmware-Update-Anzeige aktualisieren
+- "(installiert)"-Zusatz für aktive Firmware-Version in Liste anzeigen
+- Aktuell laufende Firmware-Version visuell hervorheben
+- Firmware-Version Abfrage beim Wechsel auf Firmware-Tab implementieren
+- hardware-spezifische firmware-filterung implementieren
+- Hardware-Version beim Wechsel auf Firmware-Tab abfragen
+- Firmware-Button-Status an BLE-Verbindungsstatus koppeln
+- Button während Flash-Vorgang deaktivieren
+- Flash-Button während OTA-Übertragung deaktivieren
+- AlertDialog für OTA-Ergebnis hinzufügen
+- OTA-Protokoll für Firmware-Updates implementieren
+- dynamischen Button für Firmware-Download und Flash implementieren
+- Firmware-Cache-Status visuell in der Liste markieren
+- Download-Button zur Firmware-Ansicht hinzufügen
+- Firmware-Download-Funktionalität implementieren
+- ListView für Firmware-Updates hinzufügen
+- firmware-liste und update-button hinzufügen
+- GitHub-Releases für Firmware abrufen implementieren
+- Firmware-Update-Tab und UI hinzufügen
+- Firmware-Tab zur Benutzeroberfläche hinzufügen
+- deploy_to_github.sh um Commit-Message-Parameter erweitern
+- BrdcastReceiver um Reconnect-Cache und SPD-Bypass erweitern
+- letzte TTS-Nachricht bei Reconnect erneut senden
+- zentrale AppLogger-Klasse mit Cache- und Disk-Persistence implementieren
+- 2-Minuten-Timeout für BLE-Verbindungsaufbau in NotificationService
+- Bluetooth-Reconnect-Logik auf manuelle Steuerung umstellen
+- robuste Bluetooth-Reconnect-Logik implementieren
+- GPS-Standortzugriff bei Inaktivität (>2min) deaktivieren
+- TTS-Dienst als Foreground-Service implementieren
+- MyBluetoothTtsService hinzufügen
+- NotificationService hinzufügen
+- BroadcastReceiver für TTS- und Navigations-Events hinzufügen
+- Versionsnummer und Git-Hash im Gerätetab anzeigen
+
+### 🐛 Fehlerbehebungen
+- Timeout für OTA-Abschluss-ACK erhöhen und Fehler robuster behandeln
+- Warten auf ACK für Reboot-Befehl entfernen
+- Timeout für Abschluss-Befehl auf 5 Sekunden erhöhen
+- chunkSize für OTA auf 256 Bytes festlegen
+- chunkSize für OTA auf 256 Bytes reduzieren
+- Wartezeit vor END-Befehl für ESP32-Flash-Schreibvorgang erhöhen
+- Chunk-Größe für BLE-OTA auf 256 Bytes festlegen
+- Download- und Flash-Verifizierung für Firmware implementieren
+- Rückgabetyp von writeCharacteristic für Android 13+ korrigieren
+- Retry-Mechanismus für BLE-Schreibvorgänge hinzufügen
+- logischen Fehler beim Vergleich von writeCharacteristic korrigieren
+- BLE-Schreibmodus auf NO_RESPONSE für Firmware-Update umstellen
+- sicherstellen, dass Firmware-Datei vollständig geschrieben wird
+- Pacing und Wartezeiten beim Firmware-Upload anpassen
+- Offset-Berechnung beim Firmware-Flash korrigieren
+- Übertragung auf Vollständigkeit prüfen
+- Latches vor OTA-Start zurücksetzen
+- Wartezeit für Flash-Schreibvorgang auf ESP32 erhöhen
+- Timing-Probleme bei ESP32 OTA-Update beheben
+- Timeout-Prüfung und ACK für Firmware-Flash-Befehle ergänzen
+- Latch nur bei OTA-Characteristic in onCharacteristicWrite auslösen
+- 512-Byte-Limit für BLE-Characteristics berücksichtigen
+- dynamische MTU-Größe für Firmware-Chunks verwenden
+- Fallback-Timer für MTU-Aushandlung hinzufügen
+- dynamische MTU-Größe in BluetoothService implementieren
+- ListView-Aktualisierung bei Auswahl korrigieren
+- 200ms Verzögerung beim Senden gepufferter BLE-Nachrichten einfügen
+- Race Condition bei Puffer-Nachrichten durch force-Parameter beheben
+- scan-cooldown für erzwungene reconnects umgehen
+- Log-Auto-Scroll nur bei Inhaltsänderungen ausführen
+- Firmware-Liste nach Empfang der Version aktualisieren
+- BluetoothGattDescriptor-Methoden für API 33+ aktualisieren
+- BluetoothGatt-Methoden für API 33+ aktualisieren
+- Cache-Lösch-Logik und UI-Aktualisierung der ListView korrigieren
+- benutzerdefinierten Adapter für dynamische RSSI-Aktualisierung nutzen
+- redundantes Logging im NotificationService entfernen
+- doppeltes Logging durch Umstellung auf Log.d beheben
+- BLE-Nachrichten in updateLog priorisieren
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Notifications für UART-Characteristic aktivieren
+- Button-Status-Logik in flashFirmware korrigieren
+- UI-Feedback und Button-Status während Flash-Vorgang verbessern
+- OTA-Handshake-Empfang robuster gestalten
+- OTA-Handshake-Empfang durch Descriptor-Write und Notification-Handling korrigieren
+- OTA-UUIDs auf spezifische Werte aktualisieren
+- OTA-Service auf UART-Service umstellen
+- GitHub API-Abfrage um User-Agent und Fehler-Logging ergänzen
+- ListView für Firmware in activity_main.xml hinzufügen
+- ListView für Firmware in activity_main.xml hinzufügen
+- fehlende JSON-Importe in MainActivity ergänzen
+- fehlerhafte signingConfig aus release-build entfernen
+- Build-Konfiguration (AGP und SDK) korrigieren
+- signingConfig-Syntax korrigieren
+- signingConfig-Syntax in build.gradle.kts korrigieren
+- SDK-Version auf 35 anpassen und SigningConfig korrigieren
+- Internet-Berechtigung und Logging für Firmware-Abfrage hinzufügen
+- Internet-Berechtigung und Fehler-Logging für Firmware-Abfrage
+- Firmware-Button in MainActivity korrekt initialisieren
+- Receiver-Registrierung auf EXPORTED umgestellt und Logging erweitert
+- log-spamming bei hud-suche verhindern
+- log-ausgabe für hud-suche in startSmartScan verschieben
+- Bluetooth-Reconnect-Logik stabilisieren
+- unbeabsichtigte GPS-Reaktivierung in updateLog verhindern
+- GPS-Reaktivierung bei Log-Einträgen verhindern
+- BootReceiver im Manifest registrieren
+- Paketnamen und Intent-Action korrigieren
+- fehlenden Import für NotificationService ergänzen
+- Import von NotificationService entfernen
+- fehlenden Import für NotificationService ergänzen
+- Routen-Springen durch begrenztes Suchfenster in reLockPoint beheben
+- Versionsnummer im Gerätetab korrekt positionieren
+- buildConfig in build.gradle.kts aktivieren
+
+### 🛠️ Sonstige Änderungen & Verbesserungen
+- chore: Changelog für die letzten 10 Commits erstellen
+- chore: App-Namen in Fastlane-Metadaten aktualisieren
+- chore: App-Namen in englischen Metadaten aktualisieren
+- chore: App-Namen in englischer Metadaten-Datei aktualisieren
+- images2
+- images
+- docs: ARCHITEKTUR.md in docs-Verzeichnis verschieben
+- docs: OTA-Dokumentation hinzufügen
+- docs: Dokumentationsstruktur in /docs auslagern und READMEs anpassen
+- docs: F-Droid Metadaten um Webflasher-Informationen ergänzen
+- docs: F-Droid Metadaten um Funktionsbeschreibung ergänzen
+- docs: F-Droid Metadaten und Funktionsbeschreibung präzisieren
+- docs: Zielgruppe in F-Droid-Metadaten präzisieren
+- docs: F-Droid-Beschreibungen für Anzeigedevices präzisieren
+- docs: Hardware-Hinweis in App-Beschreibung ergänzen
+- docs: App-Beschreibung um Navigations-Funktion und Link ergänzen
+- chore: F-Droid Metadaten vervollständigen
+- chore: F-Droid Metadaten-Dateien hinzufügen
+- refactor: Reconnect-Intervall verkürzen und Logging ergänzen
+- refactor: Timeout-Logik aus MyBluetoothTtsService entfernen
+- finaler Stand 13.08.
+- perf: Wartezeit für BLE-Übertragung auf 100ms erhöhen
+- refactor: Synchronisierung der Firmware-Übertragung mittels writeLatch
+- refactor: Bluetooth-Schreibmodus auf DEFAULT umstellen und Sleep anpassen
+- docs: Architektur-Übersicht hinzufügen
+- refactor: Trennung von UI-Logging und BLE-Kommunikation
+- chore: ungenutzte Datei BluetoothService.kt entfernen
+- chore: Fortschrittsliste um Aufgabe zum Entfernen von BluetoothService.kt ergänzen
+- chore: logging für MTU-request und fehlerbehandlung erweitern
+- chore: Log-Nachricht für MTU-Änderung präzisieren
+- refactor: layout für firmware-liste auf linearlayout umstellen
+- style: Versionsnummern in firmwareListView horizontal ausrichten
+- style: Monospace-Schriftart für Firmware-Liste erzwingen
+- docs: ADB-Fehlerbehebungshinweise zum Skript hinzufügen
+- refactor: Commit-Message-Anzeige korrigieren und Bearbeitung ermöglichen
+- refactor: Deployment-Prozess im Skript umbenennen und verdeutlichen
+- docs: anleitung für release-prozess in deploy-skript vereinfachen
+- jetziger Stand
+- perf: Reconnect-Scan auf aktive Systemnutzung beschränken
+- refactor: System-Aktivitätsprüfung für GPS und Heartbeat optimieren
+- perf: Intelligentes Power-Management für Heartbeat und GPS einführen
+- perf: Log-Update-Frequenz auf 2 Sekunden erhöhen
+- perf: GPS-Update-Intervall und Distanz-Schwelle anpassen
+- perf: Akkuverbrauch durch optimierte BLE-Scans und Reconnect-Intervalle
+- perf: Heartbeat-Intervall auf 10 Sekunden verkürzen
+- refactor: unzuverlässigen DISCONNECT-Befehl in onDestroy entfernen
+- style: Disketten-Icon durch Handy-Icon für lokalen Cache ersetzen
+- refactor: MainActivity auf AppLogger umstellen zur Performance-Optimierung
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturieren
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturiert
+- docs: BLUEPRINT.md aktualisieren und Fortschritt dokumentieren
+- docs: OTA-Service-UUIDs in Dokumentation ergänzen
+- docs: OTA-Service-UUIDs in Bluetooth-Protokoll-Doku ergänzen
+- docs: Bluetooth-Protokoll um GET_HW, GET_FW und OTA-Protokoll erweitern
+- docs: Review der Bluetooth-Protokoll-Dokumentation dokumentieren
+- chore: Workflow-Änderung in fortschritt.md dokumentieren
+- style: Titel im Firmware-Tab zu "Firmware Update per BLE-OTA" ändern
+- chore: OTA_SECRET_KEY in MainActivity konfigurieren
+- build: Gradle-Konfiguration auf Java 17 und SDK 35 aktualisieren
+- refactor: gradle.properties bereinigen und veraltete Flags entfernen
+- change aider /test
+- docs: BLUEPRINT.md aktualisieren und Systemarchitektur präzisieren
+- chore: deploy-skript interaktiv gestalten und auto-tagging entfernen
+- refactor: commit-nachricht in deploy-skript dynamisieren
+- letzte aiders
+- refactor: Debug-Log im Scan-Trigger entfernen
+- perf: Bluetooth-Reconnect-Logik optimieren
+- chore: GPLv3-Lizenzheader zu allen Kotlin-Dateien hinzugefügt
+- License add
+- asset-pictures added
+- Release Scripte
+- Release Scripte
+- docs: Bluetooth-Protokoll-Dokumentation um OsmAnd-Beispiele ergänzen
+- docs: Bluetooth-Protokoll-Dokumentation hinzufügen
+- refactor: Paketnamen zu ch.scriptwriter.tts2bluetoothserial ändern
+- refactor: Paketnamen auf ch.scriptwriter.tts2bluetoothserial aktualisieren
+- docs: fortschritt.md hinzufügen
+- nach update androidstudio
+
+
+## Änderungen der letzten 90 Tage (Stand: 2026-08-25)
+
+### 🚀 Neue Funktionen
+- Fastlane-Konfiguration für F-Droid hinzufügen
+- Sende Heartbeat auch bei App im Vordergrund
+- dynamische Aktivitäts-Erkennung für Navi-Apps implementieren
+- Log-Ausgabe für Auto-Reconnect hinzufügen
+- OTA-Rückmeldungen vom ESP32 verarbeiten und anzeigen
+- dynamische Chunk-Größe basierend auf MTU verwenden
+- logging und fehlerprüfung für ble-schreibvorgänge hinzufügen
+- Protokollierung beim Laden der Firmware-Datei hinzufügen
+- Fortschrittsbalken für Firmware-Download und -Flash hinzufügen
+- reboot-Befehl nach END-Signal senden
+- MTU-Timeout-Fallback in MainActivity implementieren
+- MTU-Request-Status in MainActivity protokollieren
+- Logging für MTU-Anfrage und -Bestätigung hinzufügen
+- writeCharacteristic und getMaxChunkSize in BluetoothService hinzufügen
+- MTU-Aushandlung in BluetoothService implementieren
+- gelben Rahmen für ausgewählte Firmware-Elemente hinzufügen
+- icons in der liste für status-übersicht anpassen
+- Push nach master im Deploy-Skript hinzufügen
+- lokalen Commit vor Deployment ermöglichen
+- GitHub-Release via gh CLI automatisieren
+- interaktive Versions- und Tagging-Logik implementieren
+- Puffer für Navigationsmeldungen bei Verbindungsaufbau implementieren
+- sofortigen Heartbeat nach Verbindungsaufbau senden
+- dynamisches Heartbeat-Intervall implementieren
+- DISCONNECT-Befehl an ESP32 beim App-Beenden senden
+- Firmware-Status-Icons in der Liste anzeigen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- RSSI-Anzeige und dynamische Aktualisierung der Geräteliste
+- BLE-Scan-Filter auf "BikeNav"-Gerätenamen einschränken
+- ACK-Logs filtern und durch visuellen Flash-Effekt ersetzen
+- UI-Drosselung für Log-Anzeige implementieren
+- Heartbeat-Mechanismus zur Verhinderung von ESP32-Sleep hinzufügen
+- Text für Firmware-Update-Anzeige aktualisieren
+- "(installiert)"-Zusatz für aktive Firmware-Version in Liste anzeigen
+- Aktuell laufende Firmware-Version visuell hervorheben
+- Firmware-Version Abfrage beim Wechsel auf Firmware-Tab implementieren
+- hardware-spezifische firmware-filterung implementieren
+- Hardware-Version beim Wechsel auf Firmware-Tab abfragen
+- Firmware-Button-Status an BLE-Verbindungsstatus koppeln
+- Button während Flash-Vorgang deaktivieren
+- Flash-Button während OTA-Übertragung deaktivieren
+- AlertDialog für OTA-Ergebnis hinzufügen
+- OTA-Protokoll für Firmware-Updates implementieren
+- dynamischen Button für Firmware-Download und Flash implementieren
+- Firmware-Cache-Status visuell in der Liste markieren
+- Download-Button zur Firmware-Ansicht hinzufügen
+- Firmware-Download-Funktionalität implementieren
+- ListView für Firmware-Updates hinzufügen
+- firmware-liste und update-button hinzufügen
+- GitHub-Releases für Firmware abrufen implementieren
+- Firmware-Update-Tab und UI hinzufügen
+- Firmware-Tab zur Benutzeroberfläche hinzufügen
+- deploy_to_github.sh um Commit-Message-Parameter erweitern
+- BrdcastReceiver um Reconnect-Cache und SPD-Bypass erweitern
+- letzte TTS-Nachricht bei Reconnect erneut senden
+- zentrale AppLogger-Klasse mit Cache- und Disk-Persistence implementieren
+- 2-Minuten-Timeout für BLE-Verbindungsaufbau in NotificationService
+- Bluetooth-Reconnect-Logik auf manuelle Steuerung umstellen
+- robuste Bluetooth-Reconnect-Logik implementieren
+- GPS-Standortzugriff bei Inaktivität (>2min) deaktivieren
+- TTS-Dienst als Foreground-Service implementieren
+- MyBluetoothTtsService hinzufügen
+- NotificationService hinzufügen
+- BroadcastReceiver für TTS- und Navigations-Events hinzufügen
+- Versionsnummer und Git-Hash im Gerätetab anzeigen
+
+### 🐛 Fehlerbehebungen
+- Timeout für OTA-Abschluss-ACK erhöhen und Fehler robuster behandeln
+- Warten auf ACK für Reboot-Befehl entfernen
+- Timeout für Abschluss-Befehl auf 5 Sekunden erhöhen
+- chunkSize für OTA auf 256 Bytes festlegen
+- chunkSize für OTA auf 256 Bytes reduzieren
+- Wartezeit vor END-Befehl für ESP32-Flash-Schreibvorgang erhöhen
+- Chunk-Größe für BLE-OTA auf 256 Bytes festlegen
+- Download- und Flash-Verifizierung für Firmware implementieren
+- Rückgabetyp von writeCharacteristic für Android 13+ korrigieren
+- Retry-Mechanismus für BLE-Schreibvorgänge hinzufügen
+- logischen Fehler beim Vergleich von writeCharacteristic korrigieren
+- BLE-Schreibmodus auf NO_RESPONSE für Firmware-Update umstellen
+- sicherstellen, dass Firmware-Datei vollständig geschrieben wird
+- Pacing und Wartezeiten beim Firmware-Upload anpassen
+- Offset-Berechnung beim Firmware-Flash korrigieren
+- Übertragung auf Vollständigkeit prüfen
+- Latches vor OTA-Start zurücksetzen
+- Wartezeit für Flash-Schreibvorgang auf ESP32 erhöhen
+- Timing-Probleme bei ESP32 OTA-Update beheben
+- Timeout-Prüfung und ACK für Firmware-Flash-Befehle ergänzen
+- Latch nur bei OTA-Characteristic in onCharacteristicWrite auslösen
+- 512-Byte-Limit für BLE-Characteristics berücksichtigen
+- dynamische MTU-Größe für Firmware-Chunks verwenden
+- Fallback-Timer für MTU-Aushandlung hinzufügen
+- dynamische MTU-Größe in BluetoothService implementieren
+- ListView-Aktualisierung bei Auswahl korrigieren
+- 200ms Verzögerung beim Senden gepufferter BLE-Nachrichten einfügen
+- Race Condition bei Puffer-Nachrichten durch force-Parameter beheben
+- scan-cooldown für erzwungene reconnects umgehen
+- Log-Auto-Scroll nur bei Inhaltsänderungen ausführen
+- Firmware-Liste nach Empfang der Version aktualisieren
+- BluetoothGattDescriptor-Methoden für API 33+ aktualisieren
+- BluetoothGatt-Methoden für API 33+ aktualisieren
+- Cache-Lösch-Logik und UI-Aktualisierung der ListView korrigieren
+- benutzerdefinierten Adapter für dynamische RSSI-Aktualisierung nutzen
+- redundantes Logging im NotificationService entfernen
+- doppeltes Logging durch Umstellung auf Log.d beheben
+- BLE-Nachrichten in updateLog priorisieren
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Notifications für UART-Characteristic aktivieren
+- Button-Status-Logik in flashFirmware korrigieren
+- UI-Feedback und Button-Status während Flash-Vorgang verbessern
+- OTA-Handshake-Empfang robuster gestalten
+- OTA-Handshake-Empfang durch Descriptor-Write und Notification-Handling korrigieren
+- OTA-UUIDs auf spezifische Werte aktualisieren
+- OTA-Service auf UART-Service umstellen
+- GitHub API-Abfrage um User-Agent und Fehler-Logging ergänzen
+- ListView für Firmware in activity_main.xml hinzufügen
+- ListView für Firmware in activity_main.xml hinzufügen
+- fehlende JSON-Importe in MainActivity ergänzen
+- fehlerhafte signingConfig aus release-build entfernen
+- Build-Konfiguration (AGP und SDK) korrigieren
+- signingConfig-Syntax korrigieren
+- signingConfig-Syntax in build.gradle.kts korrigieren
+- SDK-Version auf 35 anpassen und SigningConfig korrigieren
+- Internet-Berechtigung und Logging für Firmware-Abfrage hinzufügen
+- Internet-Berechtigung und Fehler-Logging für Firmware-Abfrage
+- Firmware-Button in MainActivity korrekt initialisieren
+- Receiver-Registrierung auf EXPORTED umgestellt und Logging erweitert
+- log-spamming bei hud-suche verhindern
+- log-ausgabe für hud-suche in startSmartScan verschieben
+- Bluetooth-Reconnect-Logik stabilisieren
+- unbeabsichtigte GPS-Reaktivierung in updateLog verhindern
+- GPS-Reaktivierung bei Log-Einträgen verhindern
+- BootReceiver im Manifest registrieren
+- Paketnamen und Intent-Action korrigieren
+- fehlenden Import für NotificationService ergänzen
+- Import von NotificationService entfernen
+- fehlenden Import für NotificationService ergänzen
+- Routen-Springen durch begrenztes Suchfenster in reLockPoint beheben
+- Versionsnummer im Gerätetab korrekt positionieren
+- buildConfig in build.gradle.kts aktivieren
+
+### 🛠️ Sonstige Änderungen & Verbesserungen
+- chore: Changelog für die letzten 10 Commits erstellen
+- chore: App-Namen in Fastlane-Metadaten aktualisieren
+- chore: App-Namen in englischen Metadaten aktualisieren
+- chore: App-Namen in englischer Metadaten-Datei aktualisieren
+- images2
+- images
+- docs: ARCHITEKTUR.md in docs-Verzeichnis verschieben
+- docs: OTA-Dokumentation hinzufügen
+- docs: Dokumentationsstruktur in /docs auslagern und READMEs anpassen
+- docs: F-Droid Metadaten um Webflasher-Informationen ergänzen
+- docs: F-Droid Metadaten um Funktionsbeschreibung ergänzen
+- docs: F-Droid Metadaten und Funktionsbeschreibung präzisieren
+- docs: Zielgruppe in F-Droid-Metadaten präzisieren
+- docs: F-Droid-Beschreibungen für Anzeigedevices präzisieren
+- docs: Hardware-Hinweis in App-Beschreibung ergänzen
+- docs: App-Beschreibung um Navigations-Funktion und Link ergänzen
+- chore: F-Droid Metadaten vervollständigen
+- chore: F-Droid Metadaten-Dateien hinzufügen
+- refactor: Reconnect-Intervall verkürzen und Logging ergänzen
+- refactor: Timeout-Logik aus MyBluetoothTtsService entfernen
+- finaler Stand 13.08.
+- perf: Wartezeit für BLE-Übertragung auf 100ms erhöhen
+- refactor: Synchronisierung der Firmware-Übertragung mittels writeLatch
+- refactor: Bluetooth-Schreibmodus auf DEFAULT umstellen und Sleep anpassen
+- docs: Architektur-Übersicht hinzufügen
+- refactor: Trennung von UI-Logging und BLE-Kommunikation
+- chore: ungenutzte Datei BluetoothService.kt entfernen
+- chore: Fortschrittsliste um Aufgabe zum Entfernen von BluetoothService.kt ergänzen
+- chore: logging für MTU-request und fehlerbehandlung erweitern
+- chore: Log-Nachricht für MTU-Änderung präzisieren
+- refactor: layout für firmware-liste auf linearlayout umstellen
+- style: Versionsnummern in firmwareListView horizontal ausrichten
+- style: Monospace-Schriftart für Firmware-Liste erzwingen
+- docs: ADB-Fehlerbehebungshinweise zum Skript hinzufügen
+- refactor: Commit-Message-Anzeige korrigieren und Bearbeitung ermöglichen
+- refactor: Deployment-Prozess im Skript umbenennen und verdeutlichen
+- docs: anleitung für release-prozess in deploy-skript vereinfachen
+- jetziger Stand
+- perf: Reconnect-Scan auf aktive Systemnutzung beschränken
+- refactor: System-Aktivitätsprüfung für GPS und Heartbeat optimieren
+- perf: Intelligentes Power-Management für Heartbeat und GPS einführen
+- perf: Log-Update-Frequenz auf 2 Sekunden erhöhen
+- perf: GPS-Update-Intervall und Distanz-Schwelle anpassen
+- perf: Akkuverbrauch durch optimierte BLE-Scans und Reconnect-Intervalle
+- perf: Heartbeat-Intervall auf 10 Sekunden verkürzen
+- refactor: unzuverlässigen DISCONNECT-Befehl in onDestroy entfernen
+- style: Disketten-Icon durch Handy-Icon für lokalen Cache ersetzen
+- refactor: MainActivity auf AppLogger umstellen zur Performance-Optimierung
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturieren
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturiert
+- docs: BLUEPRINT.md aktualisieren und Fortschritt dokumentieren
+- docs: OTA-Service-UUIDs in Dokumentation ergänzen
+- docs: OTA-Service-UUIDs in Bluetooth-Protokoll-Doku ergänzen
+- docs: Bluetooth-Protokoll um GET_HW, GET_FW und OTA-Protokoll erweitern
+- docs: Review der Bluetooth-Protokoll-Dokumentation dokumentieren
+- chore: Workflow-Änderung in fortschritt.md dokumentieren
+- style: Titel im Firmware-Tab zu "Firmware Update per BLE-OTA" ändern
+- chore: OTA_SECRET_KEY in MainActivity konfigurieren
+- build: Gradle-Konfiguration auf Java 17 und SDK 35 aktualisieren
+- refactor: gradle.properties bereinigen und veraltete Flags entfernen
+- change aider /test
+- docs: BLUEPRINT.md aktualisieren und Systemarchitektur präzisieren
+- chore: deploy-skript interaktiv gestalten und auto-tagging entfernen
+- refactor: commit-nachricht in deploy-skript dynamisieren
+- letzte aiders
+- refactor: Debug-Log im Scan-Trigger entfernen
+- perf: Bluetooth-Reconnect-Logik optimieren
+- chore: GPLv3-Lizenzheader zu allen Kotlin-Dateien hinzugefügt
+- License add
+- asset-pictures added
+- Release Scripte
+- Release Scripte
+- docs: Bluetooth-Protokoll-Dokumentation um OsmAnd-Beispiele ergänzen
+- docs: Bluetooth-Protokoll-Dokumentation hinzufügen
+- refactor: Paketnamen zu ch.scriptwriter.tts2bluetoothserial ändern
+- refactor: Paketnamen auf ch.scriptwriter.tts2bluetoothserial aktualisieren
+- docs: fortschritt.md hinzufügen
+- nach update androidstudio
+
+
+## Änderungen der letzten 90 Tage (Stand: 2026-08-25)
+
+### 🚀 Neue Funktionen
+- Fastlane-Konfiguration für F-Droid hinzufügen
+- Sende Heartbeat auch bei App im Vordergrund
+- dynamische Aktivitäts-Erkennung für Navi-Apps implementieren
+- Log-Ausgabe für Auto-Reconnect hinzufügen
+- OTA-Rückmeldungen vom ESP32 verarbeiten und anzeigen
+- dynamische Chunk-Größe basierend auf MTU verwenden
+- logging und fehlerprüfung für ble-schreibvorgänge hinzufügen
+- Protokollierung beim Laden der Firmware-Datei hinzufügen
+- Fortschrittsbalken für Firmware-Download und -Flash hinzufügen
+- reboot-Befehl nach END-Signal senden
+- MTU-Timeout-Fallback in MainActivity implementieren
+- MTU-Request-Status in MainActivity protokollieren
+- Logging für MTU-Anfrage und -Bestätigung hinzufügen
+- writeCharacteristic und getMaxChunkSize in BluetoothService hinzufügen
+- MTU-Aushandlung in BluetoothService implementieren
+- gelben Rahmen für ausgewählte Firmware-Elemente hinzufügen
+- icons in der liste für status-übersicht anpassen
+- Push nach master im Deploy-Skript hinzufügen
+- lokalen Commit vor Deployment ermöglichen
+- GitHub-Release via gh CLI automatisieren
+- interaktive Versions- und Tagging-Logik implementieren
+- Puffer für Navigationsmeldungen bei Verbindungsaufbau implementieren
+- sofortigen Heartbeat nach Verbindungsaufbau senden
+- dynamisches Heartbeat-Intervall implementieren
+- DISCONNECT-Befehl an ESP32 beim App-Beenden senden
+- Firmware-Status-Icons in der Liste anzeigen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- RSSI-Anzeige und dynamische Aktualisierung der Geräteliste
+- BLE-Scan-Filter auf "BikeNav"-Gerätenamen einschränken
+- ACK-Logs filtern und durch visuellen Flash-Effekt ersetzen
+- UI-Drosselung für Log-Anzeige implementieren
+- Heartbeat-Mechanismus zur Verhinderung von ESP32-Sleep hinzufügen
+- Text für Firmware-Update-Anzeige aktualisieren
+- "(installiert)"-Zusatz für aktive Firmware-Version in Liste anzeigen
+- Aktuell laufende Firmware-Version visuell hervorheben
+- Firmware-Version Abfrage beim Wechsel auf Firmware-Tab implementieren
+- hardware-spezifische firmware-filterung implementieren
+- Hardware-Version beim Wechsel auf Firmware-Tab abfragen
+- Firmware-Button-Status an BLE-Verbindungsstatus koppeln
+- Button während Flash-Vorgang deaktivieren
+- Flash-Button während OTA-Übertragung deaktivieren
+- AlertDialog für OTA-Ergebnis hinzufügen
+- OTA-Protokoll für Firmware-Updates implementieren
+- dynamischen Button für Firmware-Download und Flash implementieren
+- Firmware-Cache-Status visuell in der Liste markieren
+- Download-Button zur Firmware-Ansicht hinzufügen
+- Firmware-Download-Funktionalität implementieren
+- ListView für Firmware-Updates hinzufügen
+- firmware-liste und update-button hinzufügen
+- GitHub-Releases für Firmware abrufen implementieren
+- Firmware-Update-Tab und UI hinzufügen
+- Firmware-Tab zur Benutzeroberfläche hinzufügen
+- deploy_to_github.sh um Commit-Message-Parameter erweitern
+- BrdcastReceiver um Reconnect-Cache und SPD-Bypass erweitern
+- letzte TTS-Nachricht bei Reconnect erneut senden
+- zentrale AppLogger-Klasse mit Cache- und Disk-Persistence implementieren
+- 2-Minuten-Timeout für BLE-Verbindungsaufbau in NotificationService
+- Bluetooth-Reconnect-Logik auf manuelle Steuerung umstellen
+- robuste Bluetooth-Reconnect-Logik implementieren
+- GPS-Standortzugriff bei Inaktivität (>2min) deaktivieren
+- TTS-Dienst als Foreground-Service implementieren
+- MyBluetoothTtsService hinzufügen
+- NotificationService hinzufügen
+- BroadcastReceiver für TTS- und Navigations-Events hinzufügen
+- Versionsnummer und Git-Hash im Gerätetab anzeigen
+
+### 🐛 Fehlerbehebungen
+- Timeout für OTA-Abschluss-ACK erhöhen und Fehler robuster behandeln
+- Warten auf ACK für Reboot-Befehl entfernen
+- Timeout für Abschluss-Befehl auf 5 Sekunden erhöhen
+- chunkSize für OTA auf 256 Bytes festlegen
+- chunkSize für OTA auf 256 Bytes reduzieren
+- Wartezeit vor END-Befehl für ESP32-Flash-Schreibvorgang erhöhen
+- Chunk-Größe für BLE-OTA auf 256 Bytes festlegen
+- Download- und Flash-Verifizierung für Firmware implementieren
+- Rückgabetyp von writeCharacteristic für Android 13+ korrigieren
+- Retry-Mechanismus für BLE-Schreibvorgänge hinzufügen
+- logischen Fehler beim Vergleich von writeCharacteristic korrigieren
+- BLE-Schreibmodus auf NO_RESPONSE für Firmware-Update umstellen
+- sicherstellen, dass Firmware-Datei vollständig geschrieben wird
+- Pacing und Wartezeiten beim Firmware-Upload anpassen
+- Offset-Berechnung beim Firmware-Flash korrigieren
+- Übertragung auf Vollständigkeit prüfen
+- Latches vor OTA-Start zurücksetzen
+- Wartezeit für Flash-Schreibvorgang auf ESP32 erhöhen
+- Timing-Probleme bei ESP32 OTA-Update beheben
+- Timeout-Prüfung und ACK für Firmware-Flash-Befehle ergänzen
+- Latch nur bei OTA-Characteristic in onCharacteristicWrite auslösen
+- 512-Byte-Limit für BLE-Characteristics berücksichtigen
+- dynamische MTU-Größe für Firmware-Chunks verwenden
+- Fallback-Timer für MTU-Aushandlung hinzufügen
+- dynamische MTU-Größe in BluetoothService implementieren
+- ListView-Aktualisierung bei Auswahl korrigieren
+- 200ms Verzögerung beim Senden gepufferter BLE-Nachrichten einfügen
+- Race Condition bei Puffer-Nachrichten durch force-Parameter beheben
+- scan-cooldown für erzwungene reconnects umgehen
+- Log-Auto-Scroll nur bei Inhaltsänderungen ausführen
+- Firmware-Liste nach Empfang der Version aktualisieren
+- BluetoothGattDescriptor-Methoden für API 33+ aktualisieren
+- BluetoothGatt-Methoden für API 33+ aktualisieren
+- Cache-Lösch-Logik und UI-Aktualisierung der ListView korrigieren
+- benutzerdefinierten Adapter für dynamische RSSI-Aktualisierung nutzen
+- redundantes Logging im NotificationService entfernen
+- doppeltes Logging durch Umstellung auf Log.d beheben
+- BLE-Nachrichten in updateLog priorisieren
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Notifications für UART-Characteristic aktivieren
+- Button-Status-Logik in flashFirmware korrigieren
+- UI-Feedback und Button-Status während Flash-Vorgang verbessern
+- OTA-Handshake-Empfang robuster gestalten
+- OTA-Handshake-Empfang durch Descriptor-Write und Notification-Handling korrigieren
+- OTA-UUIDs auf spezifische Werte aktualisieren
+- OTA-Service auf UART-Service umstellen
+- GitHub API-Abfrage um User-Agent und Fehler-Logging ergänzen
+- ListView für Firmware in activity_main.xml hinzufügen
+- ListView für Firmware in activity_main.xml hinzufügen
+- fehlende JSON-Importe in MainActivity ergänzen
+- fehlerhafte signingConfig aus release-build entfernen
+- Build-Konfiguration (AGP und SDK) korrigieren
+- signingConfig-Syntax korrigieren
+- signingConfig-Syntax in build.gradle.kts korrigieren
+- SDK-Version auf 35 anpassen und SigningConfig korrigieren
+- Internet-Berechtigung und Logging für Firmware-Abfrage hinzufügen
+- Internet-Berechtigung und Fehler-Logging für Firmware-Abfrage
+- Firmware-Button in MainActivity korrekt initialisieren
+- Receiver-Registrierung auf EXPORTED umgestellt und Logging erweitert
+- log-spamming bei hud-suche verhindern
+- log-ausgabe für hud-suche in startSmartScan verschieben
+- Bluetooth-Reconnect-Logik stabilisieren
+- unbeabsichtigte GPS-Reaktivierung in updateLog verhindern
+- GPS-Reaktivierung bei Log-Einträgen verhindern
+- BootReceiver im Manifest registrieren
+- Paketnamen und Intent-Action korrigieren
+- fehlenden Import für NotificationService ergänzen
+- Import von NotificationService entfernen
+- fehlenden Import für NotificationService ergänzen
+- Routen-Springen durch begrenztes Suchfenster in reLockPoint beheben
+- Versionsnummer im Gerätetab korrekt positionieren
+- buildConfig in build.gradle.kts aktivieren
+
+### 🛠️ Sonstige Änderungen & Verbesserungen
+- chore: Changelog für die letzten 10 Commits erstellen
+- chore: App-Namen in Fastlane-Metadaten aktualisieren
+- chore: App-Namen in englischen Metadaten aktualisieren
+- chore: App-Namen in englischer Metadaten-Datei aktualisieren
+- images2
+- images
+- docs: ARCHITEKTUR.md in docs-Verzeichnis verschieben
+- docs: OTA-Dokumentation hinzufügen
+- docs: Dokumentationsstruktur in /docs auslagern und READMEs anpassen
+- docs: F-Droid Metadaten um Webflasher-Informationen ergänzen
+- docs: F-Droid Metadaten um Funktionsbeschreibung ergänzen
+- docs: F-Droid Metadaten und Funktionsbeschreibung präzisieren
+- docs: Zielgruppe in F-Droid-Metadaten präzisieren
+- docs: F-Droid-Beschreibungen für Anzeigedevices präzisieren
+- docs: Hardware-Hinweis in App-Beschreibung ergänzen
+- docs: App-Beschreibung um Navigations-Funktion und Link ergänzen
+- chore: F-Droid Metadaten vervollständigen
+- chore: F-Droid Metadaten-Dateien hinzufügen
+- refactor: Reconnect-Intervall verkürzen und Logging ergänzen
+- refactor: Timeout-Logik aus MyBluetoothTtsService entfernen
+- finaler Stand 13.08.
+- perf: Wartezeit für BLE-Übertragung auf 100ms erhöhen
+- refactor: Synchronisierung der Firmware-Übertragung mittels writeLatch
+- refactor: Bluetooth-Schreibmodus auf DEFAULT umstellen und Sleep anpassen
+- docs: Architektur-Übersicht hinzufügen
+- refactor: Trennung von UI-Logging und BLE-Kommunikation
+- chore: ungenutzte Datei BluetoothService.kt entfernen
+- chore: Fortschrittsliste um Aufgabe zum Entfernen von BluetoothService.kt ergänzen
+- chore: logging für MTU-request und fehlerbehandlung erweitern
+- chore: Log-Nachricht für MTU-Änderung präzisieren
+- refactor: layout für firmware-liste auf linearlayout umstellen
+- style: Versionsnummern in firmwareListView horizontal ausrichten
+- style: Monospace-Schriftart für Firmware-Liste erzwingen
+- docs: ADB-Fehlerbehebungshinweise zum Skript hinzufügen
+- refactor: Commit-Message-Anzeige korrigieren und Bearbeitung ermöglichen
+- refactor: Deployment-Prozess im Skript umbenennen und verdeutlichen
+- docs: anleitung für release-prozess in deploy-skript vereinfachen
+- jetziger Stand
+- perf: Reconnect-Scan auf aktive Systemnutzung beschränken
+- refactor: System-Aktivitätsprüfung für GPS und Heartbeat optimieren
+- perf: Intelligentes Power-Management für Heartbeat und GPS einführen
+- perf: Log-Update-Frequenz auf 2 Sekunden erhöhen
+- perf: GPS-Update-Intervall und Distanz-Schwelle anpassen
+- perf: Akkuverbrauch durch optimierte BLE-Scans und Reconnect-Intervalle
+- perf: Heartbeat-Intervall auf 10 Sekunden verkürzen
+- refactor: unzuverlässigen DISCONNECT-Befehl in onDestroy entfernen
+- style: Disketten-Icon durch Handy-Icon für lokalen Cache ersetzen
+- refactor: MainActivity auf AppLogger umstellen zur Performance-Optimierung
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturieren
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturiert
+- docs: BLUEPRINT.md aktualisieren und Fortschritt dokumentieren
+- docs: OTA-Service-UUIDs in Dokumentation ergänzen
+- docs: OTA-Service-UUIDs in Bluetooth-Protokoll-Doku ergänzen
+- docs: Bluetooth-Protokoll um GET_HW, GET_FW und OTA-Protokoll erweitern
+- docs: Review der Bluetooth-Protokoll-Dokumentation dokumentieren
+- chore: Workflow-Änderung in fortschritt.md dokumentieren
+- style: Titel im Firmware-Tab zu "Firmware Update per BLE-OTA" ändern
+- chore: OTA_SECRET_KEY in MainActivity konfigurieren
+- build: Gradle-Konfiguration auf Java 17 und SDK 35 aktualisieren
+- refactor: gradle.properties bereinigen und veraltete Flags entfernen
+- change aider /test
+- docs: BLUEPRINT.md aktualisieren und Systemarchitektur präzisieren
+- chore: deploy-skript interaktiv gestalten und auto-tagging entfernen
+- refactor: commit-nachricht in deploy-skript dynamisieren
+- letzte aiders
+- refactor: Debug-Log im Scan-Trigger entfernen
+- perf: Bluetooth-Reconnect-Logik optimieren
+- chore: GPLv3-Lizenzheader zu allen Kotlin-Dateien hinzugefügt
+- License add
+- asset-pictures added
+- Release Scripte
+- Release Scripte
+- docs: Bluetooth-Protokoll-Dokumentation um OsmAnd-Beispiele ergänzen
+- docs: Bluetooth-Protokoll-Dokumentation hinzufügen
+- refactor: Paketnamen zu ch.scriptwriter.tts2bluetoothserial ändern
+- refactor: Paketnamen auf ch.scriptwriter.tts2bluetoothserial aktualisieren
+- docs: fortschritt.md hinzufügen
+- nach update androidstudio
+
+
+## Änderungen der letzten 90 Tage (Stand: 2026-08-25)
+
+### 🚀 Neue Funktionen
+- Fastlane-Konfiguration für F-Droid hinzufügen
+- Sende Heartbeat auch bei App im Vordergrund
+- dynamische Aktivitäts-Erkennung für Navi-Apps implementieren
+- Log-Ausgabe für Auto-Reconnect hinzufügen
+- OTA-Rückmeldungen vom ESP32 verarbeiten und anzeigen
+- dynamische Chunk-Größe basierend auf MTU verwenden
+- logging und fehlerprüfung für ble-schreibvorgänge hinzufügen
+- Protokollierung beim Laden der Firmware-Datei hinzufügen
+- Fortschrittsbalken für Firmware-Download und -Flash hinzufügen
+- reboot-Befehl nach END-Signal senden
+- MTU-Timeout-Fallback in MainActivity implementieren
+- MTU-Request-Status in MainActivity protokollieren
+- Logging für MTU-Anfrage und -Bestätigung hinzufügen
+- writeCharacteristic und getMaxChunkSize in BluetoothService hinzufügen
+- MTU-Aushandlung in BluetoothService implementieren
+- gelben Rahmen für ausgewählte Firmware-Elemente hinzufügen
+- icons in der liste für status-übersicht anpassen
+- Push nach master im Deploy-Skript hinzufügen
+- lokalen Commit vor Deployment ermöglichen
+- GitHub-Release via gh CLI automatisieren
+- interaktive Versions- und Tagging-Logik implementieren
+- Puffer für Navigationsmeldungen bei Verbindungsaufbau implementieren
+- sofortigen Heartbeat nach Verbindungsaufbau senden
+- dynamisches Heartbeat-Intervall implementieren
+- DISCONNECT-Befehl an ESP32 beim App-Beenden senden
+- Firmware-Status-Icons in der Liste anzeigen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- RSSI-Anzeige und dynamische Aktualisierung der Geräteliste
+- BLE-Scan-Filter auf "BikeNav"-Gerätenamen einschränken
+- ACK-Logs filtern und durch visuellen Flash-Effekt ersetzen
+- UI-Drosselung für Log-Anzeige implementieren
+- Heartbeat-Mechanismus zur Verhinderung von ESP32-Sleep hinzufügen
+- Text für Firmware-Update-Anzeige aktualisieren
+- "(installiert)"-Zusatz für aktive Firmware-Version in Liste anzeigen
+- Aktuell laufende Firmware-Version visuell hervorheben
+- Firmware-Version Abfrage beim Wechsel auf Firmware-Tab implementieren
+- hardware-spezifische firmware-filterung implementieren
+- Hardware-Version beim Wechsel auf Firmware-Tab abfragen
+- Firmware-Button-Status an BLE-Verbindungsstatus koppeln
+- Button während Flash-Vorgang deaktivieren
+- Flash-Button während OTA-Übertragung deaktivieren
+- AlertDialog für OTA-Ergebnis hinzufügen
+- OTA-Protokoll für Firmware-Updates implementieren
+- dynamischen Button für Firmware-Download und Flash implementieren
+- Firmware-Cache-Status visuell in der Liste markieren
+- Download-Button zur Firmware-Ansicht hinzufügen
+- Firmware-Download-Funktionalität implementieren
+- ListView für Firmware-Updates hinzufügen
+- firmware-liste und update-button hinzufügen
+- GitHub-Releases für Firmware abrufen implementieren
+- Firmware-Update-Tab und UI hinzufügen
+- Firmware-Tab zur Benutzeroberfläche hinzufügen
+- deploy_to_github.sh um Commit-Message-Parameter erweitern
+- BrdcastReceiver um Reconnect-Cache und SPD-Bypass erweitern
+- letzte TTS-Nachricht bei Reconnect erneut senden
+- zentrale AppLogger-Klasse mit Cache- und Disk-Persistence implementieren
+- 2-Minuten-Timeout für BLE-Verbindungsaufbau in NotificationService
+- Bluetooth-Reconnect-Logik auf manuelle Steuerung umstellen
+- robuste Bluetooth-Reconnect-Logik implementieren
+- GPS-Standortzugriff bei Inaktivität (>2min) deaktivieren
+- TTS-Dienst als Foreground-Service implementieren
+- MyBluetoothTtsService hinzufügen
+- NotificationService hinzufügen
+- BroadcastReceiver für TTS- und Navigations-Events hinzufügen
+- Versionsnummer und Git-Hash im Gerätetab anzeigen
+
+### 🐛 Fehlerbehebungen
+- Timeout für OTA-Abschluss-ACK erhöhen und Fehler robuster behandeln
+- Warten auf ACK für Reboot-Befehl entfernen
+- Timeout für Abschluss-Befehl auf 5 Sekunden erhöhen
+- chunkSize für OTA auf 256 Bytes festlegen
+- chunkSize für OTA auf 256 Bytes reduzieren
+- Wartezeit vor END-Befehl für ESP32-Flash-Schreibvorgang erhöhen
+- Chunk-Größe für BLE-OTA auf 256 Bytes festlegen
+- Download- und Flash-Verifizierung für Firmware implementieren
+- Rückgabetyp von writeCharacteristic für Android 13+ korrigieren
+- Retry-Mechanismus für BLE-Schreibvorgänge hinzufügen
+- logischen Fehler beim Vergleich von writeCharacteristic korrigieren
+- BLE-Schreibmodus auf NO_RESPONSE für Firmware-Update umstellen
+- sicherstellen, dass Firmware-Datei vollständig geschrieben wird
+- Pacing und Wartezeiten beim Firmware-Upload anpassen
+- Offset-Berechnung beim Firmware-Flash korrigieren
+- Übertragung auf Vollständigkeit prüfen
+- Latches vor OTA-Start zurücksetzen
+- Wartezeit für Flash-Schreibvorgang auf ESP32 erhöhen
+- Timing-Probleme bei ESP32 OTA-Update beheben
+- Timeout-Prüfung und ACK für Firmware-Flash-Befehle ergänzen
+- Latch nur bei OTA-Characteristic in onCharacteristicWrite auslösen
+- 512-Byte-Limit für BLE-Characteristics berücksichtigen
+- dynamische MTU-Größe für Firmware-Chunks verwenden
+- Fallback-Timer für MTU-Aushandlung hinzufügen
+- dynamische MTU-Größe in BluetoothService implementieren
+- ListView-Aktualisierung bei Auswahl korrigieren
+- 200ms Verzögerung beim Senden gepufferter BLE-Nachrichten einfügen
+- Race Condition bei Puffer-Nachrichten durch force-Parameter beheben
+- scan-cooldown für erzwungene reconnects umgehen
+- Log-Auto-Scroll nur bei Inhaltsänderungen ausführen
+- Firmware-Liste nach Empfang der Version aktualisieren
+- BluetoothGattDescriptor-Methoden für API 33+ aktualisieren
+- BluetoothGatt-Methoden für API 33+ aktualisieren
+- Cache-Lösch-Logik und UI-Aktualisierung der ListView korrigieren
+- benutzerdefinierten Adapter für dynamische RSSI-Aktualisierung nutzen
+- redundantes Logging im NotificationService entfernen
+- doppeltes Logging durch Umstellung auf Log.d beheben
+- BLE-Nachrichten in updateLog priorisieren
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Notifications für UART-Characteristic aktivieren
+- Button-Status-Logik in flashFirmware korrigieren
+- UI-Feedback und Button-Status während Flash-Vorgang verbessern
+- OTA-Handshake-Empfang robuster gestalten
+- OTA-Handshake-Empfang durch Descriptor-Write und Notification-Handling korrigieren
+- OTA-UUIDs auf spezifische Werte aktualisieren
+- OTA-Service auf UART-Service umstellen
+- GitHub API-Abfrage um User-Agent und Fehler-Logging ergänzen
+- ListView für Firmware in activity_main.xml hinzufügen
+- ListView für Firmware in activity_main.xml hinzufügen
+- fehlende JSON-Importe in MainActivity ergänzen
+- fehlerhafte signingConfig aus release-build entfernen
+- Build-Konfiguration (AGP und SDK) korrigieren
+- signingConfig-Syntax korrigieren
+- signingConfig-Syntax in build.gradle.kts korrigieren
+- SDK-Version auf 35 anpassen und SigningConfig korrigieren
+- Internet-Berechtigung und Logging für Firmware-Abfrage hinzufügen
+- Internet-Berechtigung und Fehler-Logging für Firmware-Abfrage
+- Firmware-Button in MainActivity korrekt initialisieren
+- Receiver-Registrierung auf EXPORTED umgestellt und Logging erweitert
+- log-spamming bei hud-suche verhindern
+- log-ausgabe für hud-suche in startSmartScan verschieben
+- Bluetooth-Reconnect-Logik stabilisieren
+- unbeabsichtigte GPS-Reaktivierung in updateLog verhindern
+- GPS-Reaktivierung bei Log-Einträgen verhindern
+- BootReceiver im Manifest registrieren
+- Paketnamen und Intent-Action korrigieren
+- fehlenden Import für NotificationService ergänzen
+- Import von NotificationService entfernen
+- fehlenden Import für NotificationService ergänzen
+- Routen-Springen durch begrenztes Suchfenster in reLockPoint beheben
+- Versionsnummer im Gerätetab korrekt positionieren
+- buildConfig in build.gradle.kts aktivieren
+
+### 🛠️ Sonstige Änderungen & Verbesserungen
+- chore: Changelog für die letzten 10 Commits erstellen
+- chore: App-Namen in Fastlane-Metadaten aktualisieren
+- chore: App-Namen in englischen Metadaten aktualisieren
+- chore: App-Namen in englischer Metadaten-Datei aktualisieren
+- images2
+- images
+- docs: ARCHITEKTUR.md in docs-Verzeichnis verschieben
+- docs: OTA-Dokumentation hinzufügen
+- docs: Dokumentationsstruktur in /docs auslagern und READMEs anpassen
+- docs: F-Droid Metadaten um Webflasher-Informationen ergänzen
+- docs: F-Droid Metadaten um Funktionsbeschreibung ergänzen
+- docs: F-Droid Metadaten und Funktionsbeschreibung präzisieren
+- docs: Zielgruppe in F-Droid-Metadaten präzisieren
+- docs: F-Droid-Beschreibungen für Anzeigedevices präzisieren
+- docs: Hardware-Hinweis in App-Beschreibung ergänzen
+- docs: App-Beschreibung um Navigations-Funktion und Link ergänzen
+- chore: F-Droid Metadaten vervollständigen
+- chore: F-Droid Metadaten-Dateien hinzufügen
+- refactor: Reconnect-Intervall verkürzen und Logging ergänzen
+- refactor: Timeout-Logik aus MyBluetoothTtsService entfernen
+- finaler Stand 13.08.
+- perf: Wartezeit für BLE-Übertragung auf 100ms erhöhen
+- refactor: Synchronisierung der Firmware-Übertragung mittels writeLatch
+- refactor: Bluetooth-Schreibmodus auf DEFAULT umstellen und Sleep anpassen
+- docs: Architektur-Übersicht hinzufügen
+- refactor: Trennung von UI-Logging und BLE-Kommunikation
+- chore: ungenutzte Datei BluetoothService.kt entfernen
+- chore: Fortschrittsliste um Aufgabe zum Entfernen von BluetoothService.kt ergänzen
+- chore: logging für MTU-request und fehlerbehandlung erweitern
+- chore: Log-Nachricht für MTU-Änderung präzisieren
+- refactor: layout für firmware-liste auf linearlayout umstellen
+- style: Versionsnummern in firmwareListView horizontal ausrichten
+- style: Monospace-Schriftart für Firmware-Liste erzwingen
+- docs: ADB-Fehlerbehebungshinweise zum Skript hinzufügen
+- refactor: Commit-Message-Anzeige korrigieren und Bearbeitung ermöglichen
+- refactor: Deployment-Prozess im Skript umbenennen und verdeutlichen
+- docs: anleitung für release-prozess in deploy-skript vereinfachen
+- jetziger Stand
+- perf: Reconnect-Scan auf aktive Systemnutzung beschränken
+- refactor: System-Aktivitätsprüfung für GPS und Heartbeat optimieren
+- perf: Intelligentes Power-Management für Heartbeat und GPS einführen
+- perf: Log-Update-Frequenz auf 2 Sekunden erhöhen
+- perf: GPS-Update-Intervall und Distanz-Schwelle anpassen
+- perf: Akkuverbrauch durch optimierte BLE-Scans und Reconnect-Intervalle
+- perf: Heartbeat-Intervall auf 10 Sekunden verkürzen
+- refactor: unzuverlässigen DISCONNECT-Befehl in onDestroy entfernen
+- style: Disketten-Icon durch Handy-Icon für lokalen Cache ersetzen
+- refactor: MainActivity auf AppLogger umstellen zur Performance-Optimierung
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturieren
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturiert
+- docs: BLUEPRINT.md aktualisieren und Fortschritt dokumentieren
+- docs: OTA-Service-UUIDs in Dokumentation ergänzen
+- docs: OTA-Service-UUIDs in Bluetooth-Protokoll-Doku ergänzen
+- docs: Bluetooth-Protokoll um GET_HW, GET_FW und OTA-Protokoll erweitern
+- docs: Review der Bluetooth-Protokoll-Dokumentation dokumentieren
+- chore: Workflow-Änderung in fortschritt.md dokumentieren
+- style: Titel im Firmware-Tab zu "Firmware Update per BLE-OTA" ändern
+- chore: OTA_SECRET_KEY in MainActivity konfigurieren
+- build: Gradle-Konfiguration auf Java 17 und SDK 35 aktualisieren
+- refactor: gradle.properties bereinigen und veraltete Flags entfernen
+- change aider /test
+- docs: BLUEPRINT.md aktualisieren und Systemarchitektur präzisieren
+- chore: deploy-skript interaktiv gestalten und auto-tagging entfernen
+- refactor: commit-nachricht in deploy-skript dynamisieren
+- letzte aiders
+- refactor: Debug-Log im Scan-Trigger entfernen
+- perf: Bluetooth-Reconnect-Logik optimieren
+- chore: GPLv3-Lizenzheader zu allen Kotlin-Dateien hinzugefügt
+- License add
+- asset-pictures added
+- Release Scripte
+- Release Scripte
+- docs: Bluetooth-Protokoll-Dokumentation um OsmAnd-Beispiele ergänzen
+- docs: Bluetooth-Protokoll-Dokumentation hinzufügen
+- refactor: Paketnamen zu ch.scriptwriter.tts2bluetoothserial ändern
+- refactor: Paketnamen auf ch.scriptwriter.tts2bluetoothserial aktualisieren
+- docs: fortschritt.md hinzufügen
+- nach update androidstudio
+
+
+## Änderungen seit af973338203dea4f7d1a7f0cc4f35c5a7ab7e010 (2026-08-25)
+
+### 🚀 Neue Funktionen
+- Fastlane-Konfiguration für F-Droid hinzufügen
+- Sende Heartbeat auch bei App im Vordergrund
+- dynamische Aktivitäts-Erkennung für Navi-Apps implementieren
+- Log-Ausgabe für Auto-Reconnect hinzufügen
+- OTA-Rückmeldungen vom ESP32 verarbeiten und anzeigen
+- dynamische Chunk-Größe basierend auf MTU verwenden
+- logging und fehlerprüfung für ble-schreibvorgänge hinzufügen
+- Protokollierung beim Laden der Firmware-Datei hinzufügen
+- Fortschrittsbalken für Firmware-Download und -Flash hinzufügen
+- reboot-Befehl nach END-Signal senden
+- MTU-Timeout-Fallback in MainActivity implementieren
+- MTU-Request-Status in MainActivity protokollieren
+- Logging für MTU-Anfrage und -Bestätigung hinzufügen
+- writeCharacteristic und getMaxChunkSize in BluetoothService hinzufügen
+- MTU-Aushandlung in BluetoothService implementieren
+- gelben Rahmen für ausgewählte Firmware-Elemente hinzufügen
+- icons in der liste für status-übersicht anpassen
+- Push nach master im Deploy-Skript hinzufügen
+- lokalen Commit vor Deployment ermöglichen
+- GitHub-Release via gh CLI automatisieren
+- interaktive Versions- und Tagging-Logik implementieren
+- Puffer für Navigationsmeldungen bei Verbindungsaufbau implementieren
+- sofortigen Heartbeat nach Verbindungsaufbau senden
+- dynamisches Heartbeat-Intervall implementieren
+- DISCONNECT-Befehl an ESP32 beim App-Beenden senden
+- Firmware-Status-Icons in der Liste anzeigen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- RSSI-Anzeige und dynamische Aktualisierung der Geräteliste
+- BLE-Scan-Filter auf "BikeNav"-Gerätenamen einschränken
+- ACK-Logs filtern und durch visuellen Flash-Effekt ersetzen
+- UI-Drosselung für Log-Anzeige implementieren
+- Heartbeat-Mechanismus zur Verhinderung von ESP32-Sleep hinzufügen
+- Text für Firmware-Update-Anzeige aktualisieren
+- "(installiert)"-Zusatz für aktive Firmware-Version in Liste anzeigen
+- Aktuell laufende Firmware-Version visuell hervorheben
+- Firmware-Version Abfrage beim Wechsel auf Firmware-Tab implementieren
+- hardware-spezifische firmware-filterung implementieren
+- Hardware-Version beim Wechsel auf Firmware-Tab abfragen
+- Firmware-Button-Status an BLE-Verbindungsstatus koppeln
+- Button während Flash-Vorgang deaktivieren
+- Flash-Button während OTA-Übertragung deaktivieren
+- AlertDialog für OTA-Ergebnis hinzufügen
+- OTA-Protokoll für Firmware-Updates implementieren
+- dynamischen Button für Firmware-Download und Flash implementieren
+- Firmware-Cache-Status visuell in der Liste markieren
+- Download-Button zur Firmware-Ansicht hinzufügen
+- Firmware-Download-Funktionalität implementieren
+- ListView für Firmware-Updates hinzufügen
+- firmware-liste und update-button hinzufügen
+- GitHub-Releases für Firmware abrufen implementieren
+- Firmware-Update-Tab und UI hinzufügen
+- Firmware-Tab zur Benutzeroberfläche hinzufügen
+- deploy_to_github.sh um Commit-Message-Parameter erweitern
+- BrdcastReceiver um Reconnect-Cache und SPD-Bypass erweitern
+- letzte TTS-Nachricht bei Reconnect erneut senden
+- zentrale AppLogger-Klasse mit Cache- und Disk-Persistence implementieren
+- 2-Minuten-Timeout für BLE-Verbindungsaufbau in NotificationService
+- Bluetooth-Reconnect-Logik auf manuelle Steuerung umstellen
+- robuste Bluetooth-Reconnect-Logik implementieren
+- GPS-Standortzugriff bei Inaktivität (>2min) deaktivieren
+- TTS-Dienst als Foreground-Service implementieren
+- MyBluetoothTtsService hinzufügen
+- NotificationService hinzufügen
+- BroadcastReceiver für TTS- und Navigations-Events hinzufügen
+- Versionsnummer und Git-Hash im Gerätetab anzeigen
+
+### 🐛 Fehlerbehebungen
+- Timeout für OTA-Abschluss-ACK erhöhen und Fehler robuster behandeln
+- Warten auf ACK für Reboot-Befehl entfernen
+- Timeout für Abschluss-Befehl auf 5 Sekunden erhöhen
+- chunkSize für OTA auf 256 Bytes festlegen
+- chunkSize für OTA auf 256 Bytes reduzieren
+- Wartezeit vor END-Befehl für ESP32-Flash-Schreibvorgang erhöhen
+- Chunk-Größe für BLE-OTA auf 256 Bytes festlegen
+- Download- und Flash-Verifizierung für Firmware implementieren
+- Rückgabetyp von writeCharacteristic für Android 13+ korrigieren
+- Retry-Mechanismus für BLE-Schreibvorgänge hinzufügen
+- logischen Fehler beim Vergleich von writeCharacteristic korrigieren
+- BLE-Schreibmodus auf NO_RESPONSE für Firmware-Update umstellen
+- sicherstellen, dass Firmware-Datei vollständig geschrieben wird
+- Pacing und Wartezeiten beim Firmware-Upload anpassen
+- Offset-Berechnung beim Firmware-Flash korrigieren
+- Übertragung auf Vollständigkeit prüfen
+- Latches vor OTA-Start zurücksetzen
+- Wartezeit für Flash-Schreibvorgang auf ESP32 erhöhen
+- Timing-Probleme bei ESP32 OTA-Update beheben
+- Timeout-Prüfung und ACK für Firmware-Flash-Befehle ergänzen
+- Latch nur bei OTA-Characteristic in onCharacteristicWrite auslösen
+- 512-Byte-Limit für BLE-Characteristics berücksichtigen
+- dynamische MTU-Größe für Firmware-Chunks verwenden
+- Fallback-Timer für MTU-Aushandlung hinzufügen
+- dynamische MTU-Größe in BluetoothService implementieren
+- ListView-Aktualisierung bei Auswahl korrigieren
+- 200ms Verzögerung beim Senden gepufferter BLE-Nachrichten einfügen
+- Race Condition bei Puffer-Nachrichten durch force-Parameter beheben
+- scan-cooldown für erzwungene reconnects umgehen
+- Log-Auto-Scroll nur bei Inhaltsänderungen ausführen
+- Firmware-Liste nach Empfang der Version aktualisieren
+- BluetoothGattDescriptor-Methoden für API 33+ aktualisieren
+- BluetoothGatt-Methoden für API 33+ aktualisieren
+- Cache-Lösch-Logik und UI-Aktualisierung der ListView korrigieren
+- benutzerdefinierten Adapter für dynamische RSSI-Aktualisierung nutzen
+- redundantes Logging im NotificationService entfernen
+- doppeltes Logging durch Umstellung auf Log.d beheben
+- BLE-Nachrichten in updateLog priorisieren
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Notifications für UART-Characteristic aktivieren
+- Button-Status-Logik in flashFirmware korrigieren
+- UI-Feedback und Button-Status während Flash-Vorgang verbessern
+- OTA-Handshake-Empfang robuster gestalten
+- OTA-Handshake-Empfang durch Descriptor-Write und Notification-Handling korrigieren
+- OTA-UUIDs auf spezifische Werte aktualisieren
+- OTA-Service auf UART-Service umstellen
+- GitHub API-Abfrage um User-Agent und Fehler-Logging ergänzen
+- ListView für Firmware in activity_main.xml hinzufügen
+- ListView für Firmware in activity_main.xml hinzufügen
+- fehlende JSON-Importe in MainActivity ergänzen
+- fehlerhafte signingConfig aus release-build entfernen
+- Build-Konfiguration (AGP und SDK) korrigieren
+- signingConfig-Syntax korrigieren
+- signingConfig-Syntax in build.gradle.kts korrigieren
+- SDK-Version auf 35 anpassen und SigningConfig korrigieren
+- Internet-Berechtigung und Logging für Firmware-Abfrage hinzufügen
+- Internet-Berechtigung und Fehler-Logging für Firmware-Abfrage
+- Firmware-Button in MainActivity korrekt initialisieren
+- Receiver-Registrierung auf EXPORTED umgestellt und Logging erweitert
+- log-spamming bei hud-suche verhindern
+- log-ausgabe für hud-suche in startSmartScan verschieben
+- Bluetooth-Reconnect-Logik stabilisieren
+- unbeabsichtigte GPS-Reaktivierung in updateLog verhindern
+- GPS-Reaktivierung bei Log-Einträgen verhindern
+- BootReceiver im Manifest registrieren
+- Paketnamen und Intent-Action korrigieren
+- fehlenden Import für NotificationService ergänzen
+- Import von NotificationService entfernen
+- fehlenden Import für NotificationService ergänzen
+- Routen-Springen durch begrenztes Suchfenster in reLockPoint beheben
+- Versionsnummer im Gerätetab korrekt positionieren
+- buildConfig in build.gradle.kts aktivieren
+
+### 🛠️ Sonstige Änderungen & Verbesserungen
+- chore: Changelog für die letzten 10 Commits erstellen
+- chore: App-Namen in Fastlane-Metadaten aktualisieren
+- chore: App-Namen in englischen Metadaten aktualisieren
+- chore: App-Namen in englischer Metadaten-Datei aktualisieren
+- images2
+- images
+- docs: ARCHITEKTUR.md in docs-Verzeichnis verschieben
+- docs: OTA-Dokumentation hinzufügen
+- docs: Dokumentationsstruktur in /docs auslagern und READMEs anpassen
+- docs: F-Droid Metadaten um Webflasher-Informationen ergänzen
+- docs: F-Droid Metadaten um Funktionsbeschreibung ergänzen
+- docs: F-Droid Metadaten und Funktionsbeschreibung präzisieren
+- docs: Zielgruppe in F-Droid-Metadaten präzisieren
+- docs: F-Droid-Beschreibungen für Anzeigedevices präzisieren
+- docs: Hardware-Hinweis in App-Beschreibung ergänzen
+- docs: App-Beschreibung um Navigations-Funktion und Link ergänzen
+- chore: F-Droid Metadaten vervollständigen
+- chore: F-Droid Metadaten-Dateien hinzufügen
+- refactor: Reconnect-Intervall verkürzen und Logging ergänzen
+- refactor: Timeout-Logik aus MyBluetoothTtsService entfernen
+- finaler Stand 13.08.
+- perf: Wartezeit für BLE-Übertragung auf 100ms erhöhen
+- refactor: Synchronisierung der Firmware-Übertragung mittels writeLatch
+- refactor: Bluetooth-Schreibmodus auf DEFAULT umstellen und Sleep anpassen
+- docs: Architektur-Übersicht hinzufügen
+- refactor: Trennung von UI-Logging und BLE-Kommunikation
+- chore: ungenutzte Datei BluetoothService.kt entfernen
+- chore: Fortschrittsliste um Aufgabe zum Entfernen von BluetoothService.kt ergänzen
+- chore: logging für MTU-request und fehlerbehandlung erweitern
+- chore: Log-Nachricht für MTU-Änderung präzisieren
+- refactor: layout für firmware-liste auf linearlayout umstellen
+- style: Versionsnummern in firmwareListView horizontal ausrichten
+- style: Monospace-Schriftart für Firmware-Liste erzwingen
+- docs: ADB-Fehlerbehebungshinweise zum Skript hinzufügen
+- refactor: Commit-Message-Anzeige korrigieren und Bearbeitung ermöglichen
+- refactor: Deployment-Prozess im Skript umbenennen und verdeutlichen
+- docs: anleitung für release-prozess in deploy-skript vereinfachen
+- jetziger Stand
+- perf: Reconnect-Scan auf aktive Systemnutzung beschränken
+- refactor: System-Aktivitätsprüfung für GPS und Heartbeat optimieren
+- perf: Intelligentes Power-Management für Heartbeat und GPS einführen
+- perf: Log-Update-Frequenz auf 2 Sekunden erhöhen
+- perf: GPS-Update-Intervall und Distanz-Schwelle anpassen
+- perf: Akkuverbrauch durch optimierte BLE-Scans und Reconnect-Intervalle
+- perf: Heartbeat-Intervall auf 10 Sekunden verkürzen
+- refactor: unzuverlässigen DISCONNECT-Befehl in onDestroy entfernen
+- style: Disketten-Icon durch Handy-Icon für lokalen Cache ersetzen
+- refactor: MainActivity auf AppLogger umstellen zur Performance-Optimierung
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturieren
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturiert
+- docs: BLUEPRINT.md aktualisieren und Fortschritt dokumentieren
+- docs: OTA-Service-UUIDs in Dokumentation ergänzen
+- docs: OTA-Service-UUIDs in Bluetooth-Protokoll-Doku ergänzen
+- docs: Bluetooth-Protokoll um GET_HW, GET_FW und OTA-Protokoll erweitern
+- docs: Review der Bluetooth-Protokoll-Dokumentation dokumentieren
+- chore: Workflow-Änderung in fortschritt.md dokumentieren
+- style: Titel im Firmware-Tab zu "Firmware Update per BLE-OTA" ändern
+- chore: OTA_SECRET_KEY in MainActivity konfigurieren
+- build: Gradle-Konfiguration auf Java 17 und SDK 35 aktualisieren
+- refactor: gradle.properties bereinigen und veraltete Flags entfernen
+- change aider /test
+- docs: BLUEPRINT.md aktualisieren und Systemarchitektur präzisieren
+- chore: deploy-skript interaktiv gestalten und auto-tagging entfernen
+- refactor: commit-nachricht in deploy-skript dynamisieren
+- letzte aiders
+- refactor: Debug-Log im Scan-Trigger entfernen
+- perf: Bluetooth-Reconnect-Logik optimieren
+- chore: GPLv3-Lizenzheader zu allen Kotlin-Dateien hinzugefügt
+- License add
+- asset-pictures added
+- Release Scripte
+- Release Scripte
+- docs: Bluetooth-Protokoll-Dokumentation um OsmAnd-Beispiele ergänzen
+- docs: Bluetooth-Protokoll-Dokumentation hinzufügen
+- refactor: Paketnamen zu ch.scriptwriter.tts2bluetoothserial ändern
+- refactor: Paketnamen auf ch.scriptwriter.tts2bluetoothserial aktualisieren
+- docs: fortschritt.md hinzufügen
+- nach update androidstudio
+- pre aider
+- logsharing
+- energieoptimierung ble und gps
+- bignotifications korrekt verschmelzen
+- testbutton geht auch wieder
+- broadcastreceiver für tts und notification separiert
+- eigener picker
+- Git-Hausputz
+- Stand TTS und notification teilweise
+- Stand TTS geht wieder
+- ble reconnect und testsendung
+
+
+## Änderungen seit af973338203dea4f7d1a7f0cc4f35c5a7ab7e010 (2026-08-25)
+
+### 🚀 Neue Funktionen
+- Fastlane-Konfiguration für F-Droid hinzufügen
+- Sende Heartbeat auch bei App im Vordergrund
+- dynamische Aktivitäts-Erkennung für Navi-Apps implementieren
+- Log-Ausgabe für Auto-Reconnect hinzufügen
+- OTA-Rückmeldungen vom ESP32 verarbeiten und anzeigen
+- dynamische Chunk-Größe basierend auf MTU verwenden
+- logging und fehlerprüfung für ble-schreibvorgänge hinzufügen
+- Protokollierung beim Laden der Firmware-Datei hinzufügen
+- Fortschrittsbalken für Firmware-Download und -Flash hinzufügen
+- reboot-Befehl nach END-Signal senden
+- MTU-Timeout-Fallback in MainActivity implementieren
+- MTU-Request-Status in MainActivity protokollieren
+- Logging für MTU-Anfrage und -Bestätigung hinzufügen
+- writeCharacteristic und getMaxChunkSize in BluetoothService hinzufügen
+- MTU-Aushandlung in BluetoothService implementieren
+- gelben Rahmen für ausgewählte Firmware-Elemente hinzufügen
+- icons in der liste für status-übersicht anpassen
+- Push nach master im Deploy-Skript hinzufügen
+- lokalen Commit vor Deployment ermöglichen
+- GitHub-Release via gh CLI automatisieren
+- interaktive Versions- und Tagging-Logik implementieren
+- Puffer für Navigationsmeldungen bei Verbindungsaufbau implementieren
+- sofortigen Heartbeat nach Verbindungsaufbau senden
+- dynamisches Heartbeat-Intervall implementieren
+- DISCONNECT-Befehl an ESP32 beim App-Beenden senden
+- Firmware-Status-Icons in der Liste anzeigen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- Button zum Löschen des Firmware-Caches hinzufügen
+- RSSI-Anzeige und dynamische Aktualisierung der Geräteliste
+- BLE-Scan-Filter auf "BikeNav"-Gerätenamen einschränken
+- ACK-Logs filtern und durch visuellen Flash-Effekt ersetzen
+- UI-Drosselung für Log-Anzeige implementieren
+- Heartbeat-Mechanismus zur Verhinderung von ESP32-Sleep hinzufügen
+- Text für Firmware-Update-Anzeige aktualisieren
+- "(installiert)"-Zusatz für aktive Firmware-Version in Liste anzeigen
+- Aktuell laufende Firmware-Version visuell hervorheben
+- Firmware-Version Abfrage beim Wechsel auf Firmware-Tab implementieren
+- hardware-spezifische firmware-filterung implementieren
+- Hardware-Version beim Wechsel auf Firmware-Tab abfragen
+- Firmware-Button-Status an BLE-Verbindungsstatus koppeln
+- Button während Flash-Vorgang deaktivieren
+- Flash-Button während OTA-Übertragung deaktivieren
+- AlertDialog für OTA-Ergebnis hinzufügen
+- OTA-Protokoll für Firmware-Updates implementieren
+- dynamischen Button für Firmware-Download und Flash implementieren
+- Firmware-Cache-Status visuell in der Liste markieren
+- Download-Button zur Firmware-Ansicht hinzufügen
+- Firmware-Download-Funktionalität implementieren
+- ListView für Firmware-Updates hinzufügen
+- firmware-liste und update-button hinzufügen
+- GitHub-Releases für Firmware abrufen implementieren
+- Firmware-Update-Tab und UI hinzufügen
+- Firmware-Tab zur Benutzeroberfläche hinzufügen
+- deploy_to_github.sh um Commit-Message-Parameter erweitern
+- BrdcastReceiver um Reconnect-Cache und SPD-Bypass erweitern
+- letzte TTS-Nachricht bei Reconnect erneut senden
+- zentrale AppLogger-Klasse mit Cache- und Disk-Persistence implementieren
+- 2-Minuten-Timeout für BLE-Verbindungsaufbau in NotificationService
+- Bluetooth-Reconnect-Logik auf manuelle Steuerung umstellen
+- robuste Bluetooth-Reconnect-Logik implementieren
+- GPS-Standortzugriff bei Inaktivität (>2min) deaktivieren
+- TTS-Dienst als Foreground-Service implementieren
+- MyBluetoothTtsService hinzufügen
+- NotificationService hinzufügen
+- BroadcastReceiver für TTS- und Navigations-Events hinzufügen
+- Versionsnummer und Git-Hash im Gerätetab anzeigen
+
+### 🐛 Fehlerbehebungen
+- Timeout für OTA-Abschluss-ACK erhöhen und Fehler robuster behandeln
+- Warten auf ACK für Reboot-Befehl entfernen
+- Timeout für Abschluss-Befehl auf 5 Sekunden erhöhen
+- chunkSize für OTA auf 256 Bytes festlegen
+- chunkSize für OTA auf 256 Bytes reduzieren
+- Wartezeit vor END-Befehl für ESP32-Flash-Schreibvorgang erhöhen
+- Chunk-Größe für BLE-OTA auf 256 Bytes festlegen
+- Download- und Flash-Verifizierung für Firmware implementieren
+- Rückgabetyp von writeCharacteristic für Android 13+ korrigieren
+- Retry-Mechanismus für BLE-Schreibvorgänge hinzufügen
+- logischen Fehler beim Vergleich von writeCharacteristic korrigieren
+- BLE-Schreibmodus auf NO_RESPONSE für Firmware-Update umstellen
+- sicherstellen, dass Firmware-Datei vollständig geschrieben wird
+- Pacing und Wartezeiten beim Firmware-Upload anpassen
+- Offset-Berechnung beim Firmware-Flash korrigieren
+- Übertragung auf Vollständigkeit prüfen
+- Latches vor OTA-Start zurücksetzen
+- Wartezeit für Flash-Schreibvorgang auf ESP32 erhöhen
+- Timing-Probleme bei ESP32 OTA-Update beheben
+- Timeout-Prüfung und ACK für Firmware-Flash-Befehle ergänzen
+- Latch nur bei OTA-Characteristic in onCharacteristicWrite auslösen
+- 512-Byte-Limit für BLE-Characteristics berücksichtigen
+- dynamische MTU-Größe für Firmware-Chunks verwenden
+- Fallback-Timer für MTU-Aushandlung hinzufügen
+- dynamische MTU-Größe in BluetoothService implementieren
+- ListView-Aktualisierung bei Auswahl korrigieren
+- 200ms Verzögerung beim Senden gepufferter BLE-Nachrichten einfügen
+- Race Condition bei Puffer-Nachrichten durch force-Parameter beheben
+- scan-cooldown für erzwungene reconnects umgehen
+- Log-Auto-Scroll nur bei Inhaltsänderungen ausführen
+- Firmware-Liste nach Empfang der Version aktualisieren
+- BluetoothGattDescriptor-Methoden für API 33+ aktualisieren
+- BluetoothGatt-Methoden für API 33+ aktualisieren
+- Cache-Lösch-Logik und UI-Aktualisierung der ListView korrigieren
+- benutzerdefinierten Adapter für dynamische RSSI-Aktualisierung nutzen
+- redundantes Logging im NotificationService entfernen
+- doppeltes Logging durch Umstellung auf Log.d beheben
+- BLE-Nachrichten in updateLog priorisieren
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Race Condition bei BLE-Befehlsfolge durch Delay beheben
+- Notifications für UART-Characteristic aktivieren
+- Button-Status-Logik in flashFirmware korrigieren
+- UI-Feedback und Button-Status während Flash-Vorgang verbessern
+- OTA-Handshake-Empfang robuster gestalten
+- OTA-Handshake-Empfang durch Descriptor-Write und Notification-Handling korrigieren
+- OTA-UUIDs auf spezifische Werte aktualisieren
+- OTA-Service auf UART-Service umstellen
+- GitHub API-Abfrage um User-Agent und Fehler-Logging ergänzen
+- ListView für Firmware in activity_main.xml hinzufügen
+- ListView für Firmware in activity_main.xml hinzufügen
+- fehlende JSON-Importe in MainActivity ergänzen
+- fehlerhafte signingConfig aus release-build entfernen
+- Build-Konfiguration (AGP und SDK) korrigieren
+- signingConfig-Syntax korrigieren
+- signingConfig-Syntax in build.gradle.kts korrigieren
+- SDK-Version auf 35 anpassen und SigningConfig korrigieren
+- Internet-Berechtigung und Logging für Firmware-Abfrage hinzufügen
+- Internet-Berechtigung und Fehler-Logging für Firmware-Abfrage
+- Firmware-Button in MainActivity korrekt initialisieren
+- Receiver-Registrierung auf EXPORTED umgestellt und Logging erweitert
+- log-spamming bei hud-suche verhindern
+- log-ausgabe für hud-suche in startSmartScan verschieben
+- Bluetooth-Reconnect-Logik stabilisieren
+- unbeabsichtigte GPS-Reaktivierung in updateLog verhindern
+- GPS-Reaktivierung bei Log-Einträgen verhindern
+- BootReceiver im Manifest registrieren
+- Paketnamen und Intent-Action korrigieren
+- fehlenden Import für NotificationService ergänzen
+- Import von NotificationService entfernen
+- fehlenden Import für NotificationService ergänzen
+- Routen-Springen durch begrenztes Suchfenster in reLockPoint beheben
+- Versionsnummer im Gerätetab korrekt positionieren
+- buildConfig in build.gradle.kts aktivieren
+
+### 🛠️ Sonstige Änderungen & Verbesserungen
+- chore: Changelog für die letzten 10 Commits erstellen
+- Release 1.1.3
+- chore: App-Namen in Fastlane-Metadaten aktualisieren
+- Release 1.1.3
+- chore: App-Namen in englischen Metadaten aktualisieren
+- chore: App-Namen in englischer Metadaten-Datei aktualisieren
+- images2
+- images
+- Release 1.1.3
+- docs: ARCHITEKTUR.md in docs-Verzeichnis verschieben
+- Release 1.1.3
+- docs: OTA-Dokumentation hinzufügen
+- docs: Dokumentationsstruktur in /docs auslagern und READMEs anpassen
+- Release 1.1.3
+- docs: F-Droid Metadaten um Webflasher-Informationen ergänzen
+- docs: F-Droid Metadaten um Funktionsbeschreibung ergänzen
+- docs: F-Droid Metadaten und Funktionsbeschreibung präzisieren
+- docs: Zielgruppe in F-Droid-Metadaten präzisieren
+- docs: F-Droid-Beschreibungen für Anzeigedevices präzisieren
+- docs: Hardware-Hinweis in App-Beschreibung ergänzen
+- Release 1.1.3
+- docs: App-Beschreibung um Navigations-Funktion und Link ergänzen
+- Release 1.1.3
+- chore: F-Droid Metadaten vervollständigen
+- Release 1.1.3
+- Release 1.1.3
+- chore: F-Droid Metadaten-Dateien hinzufügen
+- refactor: Reconnect-Intervall verkürzen und Logging ergänzen
+- refactor: Timeout-Logik aus MyBluetoothTtsService entfernen
+- finaler Stand 13.08.
+- perf: Wartezeit für BLE-Übertragung auf 100ms erhöhen
+- refactor: Synchronisierung der Firmware-Übertragung mittels writeLatch
+- refactor: Bluetooth-Schreibmodus auf DEFAULT umstellen und Sleep anpassen
+- docs: Architektur-Übersicht hinzufügen
+- refactor: Trennung von UI-Logging und BLE-Kommunikation
+- chore: ungenutzte Datei BluetoothService.kt entfernen
+- chore: Fortschrittsliste um Aufgabe zum Entfernen von BluetoothService.kt ergänzen
+- chore: logging für MTU-request und fehlerbehandlung erweitern
+- chore: Log-Nachricht für MTU-Änderung präzisieren
+- refactor: layout für firmware-liste auf linearlayout umstellen
+- style: Versionsnummern in firmwareListView horizontal ausrichten
+- style: Monospace-Schriftart für Firmware-Liste erzwingen
+- docs: ADB-Fehlerbehebungshinweise zum Skript hinzufügen
+- Release 1.1.2
+- refactor: Commit-Message-Anzeige korrigieren und Bearbeitung ermöglichen
+- Release 1.1.2
+- refactor: Deployment-Prozess im Skript umbenennen und verdeutlichen
+- docs: anleitung für release-prozess in deploy-skript vereinfachen
+- jetziger Stand
+- perf: Reconnect-Scan auf aktive Systemnutzung beschränken
+- refactor: System-Aktivitätsprüfung für GPS und Heartbeat optimieren
+- perf: Intelligentes Power-Management für Heartbeat und GPS einführen
+- perf: Log-Update-Frequenz auf 2 Sekunden erhöhen
+- perf: GPS-Update-Intervall und Distanz-Schwelle anpassen
+- perf: Akkuverbrauch durch optimierte BLE-Scans und Reconnect-Intervalle
+- perf: Heartbeat-Intervall auf 10 Sekunden verkürzen
+- refactor: unzuverlässigen DISCONNECT-Befehl in onDestroy entfernen
+- style: Disketten-Icon durch Handy-Icon für lokalen Cache ersetzen
+- refactor: MainActivity auf AppLogger umstellen zur Performance-Optimierung
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturieren
+- docs: Bluetooth-Protokoll-Dokumentation bilingual strukturiert
+- docs: BLUEPRINT.md aktualisieren und Fortschritt dokumentieren
+- docs: OTA-Service-UUIDs in Dokumentation ergänzen
+- docs: OTA-Service-UUIDs in Bluetooth-Protokoll-Doku ergänzen
+- docs: Bluetooth-Protokoll um GET_HW, GET_FW und OTA-Protokoll erweitern
+- docs: Review der Bluetooth-Protokoll-Dokumentation dokumentieren
+- chore: Workflow-Änderung in fortschritt.md dokumentieren
+- style: Titel im Firmware-Tab zu "Firmware Update per BLE-OTA" ändern
+- chore: OTA_SECRET_KEY in MainActivity konfigurieren
+- build: Gradle-Konfiguration auf Java 17 und SDK 35 aktualisieren
+- refactor: gradle.properties bereinigen und veraltete Flags entfernen
+- change aider /test
+- docs: BLUEPRINT.md aktualisieren und Systemarchitektur präzisieren
+- chore: deploy-skript interaktiv gestalten und auto-tagging entfernen
+- refactor: commit-nachricht in deploy-skript dynamisieren
+- letzte aiders
+- refactor: Debug-Log im Scan-Trigger entfernen
+- perf: Bluetooth-Reconnect-Logik optimieren
+- chore: GPLv3-Lizenzheader zu allen Kotlin-Dateien hinzugefügt
+- License add
+- asset-pictures added
+- Release Scripte
+- Release Scripte
+- docs: Bluetooth-Protokoll-Dokumentation um OsmAnd-Beispiele ergänzen
+- docs: Bluetooth-Protokoll-Dokumentation hinzufügen
+- refactor: Paketnamen zu ch.scriptwriter.tts2bluetoothserial ändern
+- refactor: Paketnamen auf ch.scriptwriter.tts2bluetoothserial aktualisieren
+- docs: fortschritt.md hinzufügen
+- nach update androidstudio
+- pre aider
+- logsharing
+- energieoptimierung ble und gps
+- bignotifications korrekt verschmelzen
+- testbutton geht auch wieder
+- broadcastreceiver für tts und notification separiert
+- eigener picker
+- Git-Hausputz
+- Stand TTS und notification teilweise
+- Stand TTS geht wieder
+- ble reconnect und testsendung
